@@ -57,8 +57,8 @@ public class Robot extends TimedRobot {
 	private Gamepad gp2;
 
 	// Robot Hardware Attached:
-	private int counter;
 	private Config config;
+	private Health health;
 
 	// Operating Modes
 	private ModeAuton modeAuton;
@@ -74,7 +74,6 @@ public class Robot extends TimedRobot {
 	@Override
 	public void robotInit() 
 	{
-
 		// Initialize User-Side Controls
 		m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
 		m_chooser.addOption("My Auto", kCustomAuto);
@@ -84,10 +83,12 @@ public class Robot extends TimedRobot {
 		gp2 = new Gamepad(1);
 
 		// Initialization of all Hardware
-		counter = 0;
+		health = new Health(0);
 		config = new Config(0);
+
+		// Initialization of all Modes
 		modeAuton = new ModeAuton(config);
-		modeTeleOp = new ModeTeleOp(config);
+		modeTeleOp = new ModeTeleOp(config, gp1, gp2);
 		modeSimulation = new ModeSimulation(config);
 		modeTest = new ModeTest(config);
 		modeDisabled = new ModeDisabled(config);
@@ -103,12 +104,7 @@ public class Robot extends TimedRobot {
 	@Override
 	public void robotPeriodic() 
 	{
-		if ((++counter % 10) == 0)
-		{
-			SmartDashboard.putNumber("Left", gp1.getLeftY());
-			SmartDashboard.putNumber("Right", gp1.getRightY());
-			SmartDashboard.putNumber("Counter", counter);
-		}
+		health.Loop();
 	}
 
 	/**

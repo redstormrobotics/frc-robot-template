@@ -34,11 +34,19 @@
 /=================================================================*/
 package frc.robot;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 public class ModeTeleOp extends Mode {
 
-    public ModeTeleOp(Config config) 
+    // Copies of objects that are used by this mode:
+    Gamepad gp1;
+    Gamepad gp2;
+
+    public ModeTeleOp(Config config, Gamepad gp1, Gamepad gp2) 
     {
         super(config);
+        this.gp1 = gp1;
+        this.gp2 = gp2;
     }
 
     protected boolean Init() 
@@ -48,5 +56,7 @@ public class ModeTeleOp extends Mode {
 
     protected void Loop() 
     { 
+        SmartDashboard.putNumber("Left Y",  gp1.getLeftY());
+        SmartDashboard.putNumber("Right Y", gp1.getRightY());
     }
 }
