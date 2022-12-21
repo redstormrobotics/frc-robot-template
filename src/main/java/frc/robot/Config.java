@@ -38,8 +38,11 @@ package frc.robot;
 
 public class Config 
 {
+    public int robotNumber;
+
     public Config(int robotNumber)
     {
+        this.robotNumber = robotNumber;
     }
 
 }

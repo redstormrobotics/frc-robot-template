@@ -78,6 +78,11 @@ public class Gamepad {
 	{
 		controller = new Joystick(port);
 		System.out.println(port);
+		selectWindows(windows);
+	}
+
+	public void selectWindows(boolean windows)
+	{
 		if (windows)
 		{
 			AxisMap = AxisMapWindows;

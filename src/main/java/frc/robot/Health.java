@@ -42,6 +42,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Health 
 {
+    private String errors = "";
     private double cur_battery_voltage = 15.0;
     private double min_battery_voltage = 15.0;
     private double cur_current_input = 0.0;
@@ -53,6 +54,7 @@ public class Health
 
     public Health(int robotNum)
     {
+        errors = "";
     }
 
     public void Loop()
@@ -86,7 +88,23 @@ public class Health
             SmartDashboard.putNumber("health - battery min", min_battery_voltage);
             SmartDashboard.putNumber("health - current", cur_current_input);
             SmartDashboard.putNumber("health - current max", max_current_input);
+            if (errors.length() > 0) {
+                SmartDashboard.putString("health - errors", errors);
+                SmartDashboard.putBoolean("health - ok", false);
+            } else {
+                SmartDashboard.putString("health - errors", "none");
+                SmartDashboard.putBoolean("health - ok", true);
+            }
 		}
     }
 
+    public void addError(String newError)
+    {
+        errors += newError;
+    }
+
+    public void clearErrors()
+    {
+        errors = "";
+    }
 }

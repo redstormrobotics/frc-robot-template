@@ -48,10 +48,11 @@ public class Mode
         this.config = config;
     }
 
-    public void Initialize()
+    public void Initialize(boolean okToAttempt)
     {
-        if (config == null)
+        if ((config == null) || (!okToAttempt))
         {
+            initOkay = false;
             return;
         }
 

@@ -49,10 +49,12 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 public class Robot extends TimedRobot {
 
 	// User-Side Controls
+	private boolean runnable;
 	private static final String kDefaultAuto = "Default";
 	private static final String kCustomAuto = "My Auto";
 	private String m_autoSelected;
 	private final SendableChooser<String> m_chooser = new SendableChooser<>();
+	private final SendableChooser<Boolean> m_driverWindows = new SendableChooser<>();
 	private Gamepad gp1;
 	private Gamepad gp2;
 
@@ -74,11 +76,15 @@ public class Robot extends TimedRobot {
 	@Override
 	public void robotInit() 
 	{
+		runnable = false;
+
 		// Initialize User-Side Controls
 		m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
 		m_chooser.addOption("My Auto", kCustomAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
-		System.out.println("robotInit() complete");
+		m_driverWindows.setDefaultOption("Windows", true);
+		m_driverWindows.addOption("Linux", false);
+		SmartDashboard.putData("Driver Platform", m_driverWindows);
 		gp1 = new Gamepad(0);
 		gp2 = new Gamepad(1);
 
@@ -87,11 +93,22 @@ public class Robot extends TimedRobot {
 		config = new Config(0);
 
 		// Initialization of all Modes
-		modeAuton = new ModeAuton(config);
-		modeTeleOp = new ModeTeleOp(config, gp1, gp2);
-		modeSimulation = new ModeSimulation(config);
-		modeTest = new ModeTest(config);
-		modeDisabled = new ModeDisabled(config);
+		try
+		{
+			modeAuton = new ModeAuton(config);
+			modeTeleOp = new ModeTeleOp(config, gp1, gp2);
+			modeSimulation = new ModeSimulation(config);
+			modeTest = new ModeTest(config);
+			modeDisabled = new ModeDisabled(config);
+			runnable = true;
+		}
+		catch(Exception e)
+		{
+			health.addError("Failed to Create Modes: " + e.getMessage());
+			runnable = false;
+		}
+
+		System.out.println("robotInit() complete");
 	}
 
 	/**
@@ -122,7 +139,7 @@ public class Robot extends TimedRobot {
 		m_autoSelected = m_chooser.getSelected();
 		// m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
 		System.out.println("Auto selected: " + m_autoSelected);
-		modeAuton.Initialize();
+		modeAuton.Initialize(runnable);
 		modeAuton.selectAuton(m_autoSelected);
 	}
 
@@ -136,7 +153,9 @@ public class Robot extends TimedRobot {
 	@Override
 	public void teleopInit() 
 	{
-		modeTeleOp.Initialize();
+		gp1.selectWindows(m_driverWindows.getSelected());
+		gp2.selectWindows(m_driverWindows.getSelected());
+		modeTeleOp.Initialize(runnable);
 	}
 
 	@Override
@@ -148,7 +167,7 @@ public class Robot extends TimedRobot {
 	@Override
 	public void disabledInit() 
 	{
-		modeDisabled.Initialize();
+		modeDisabled.Initialize(runnable);
 	}
 
 	@Override
@@ -160,7 +179,9 @@ public class Robot extends TimedRobot {
 	@Override
 	public void testInit() 
 	{
-		modeTest.Initialize();
+		gp1.selectWindows(m_driverWindows.getSelected());
+		gp2.selectWindows(m_driverWindows.getSelected());
+		modeTest.Initialize(runnable);
 	}
 
 	@Override
@@ -172,7 +193,9 @@ public class Robot extends TimedRobot {
 	@Override
 	public void simulationInit() 
 	{
-		modeSimulation.Initialize();
+		gp1.selectWindows(m_driverWindows.getSelected());
+		gp2.selectWindows(m_driverWindows.getSelected());
+		modeSimulation.Initialize(runnable);
 	}
 
 	@Override
