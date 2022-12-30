@@ -4,12 +4,12 @@
 .vscode
 .vscode/*
 
-.wpilib
-.wpilib/*
+!.wpilib
+!.wpilib/*
 
 
-gradle
-gradle/*
+!gradle
+!gradle/*
 
 ### C++ ###
 # Prerequisites
