@@ -21,6 +21,23 @@ public final class Main
    * <p>If you change your main robot class, change the parameter type.
    */
   public static void main(String... args) {
-    RobotBase.startRobot(Robot::new);
+    try {
+      Package robotPackage = Main.class.getPackage();
+      System.out.println("Starting robot " + robotPackage.getImplementationTitle() + " at version " + robotPackage.getImplementationVersion());
+      RobotBase.startRobot(Robot::new);
+    } catch(Throwable t) {
+      System.err.println("Robot died: " + t.toString());
+      t.printStackTrace();
+      printErrors(t.getCause());
+    }
+  }
+
+  static private void printErrors(Throwable t) {
+    if(t != null)
+    {
+      System.err.println("caused by: " + t.toString());
+      t.printStackTrace();
+      printErrors(t.getCause());
+    }
   }
 }

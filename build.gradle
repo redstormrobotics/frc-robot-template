@@ -21,7 +21,14 @@ repositories {
 sourceCompatibility = JavaVersion.VERSION_11
 targetCompatibility = JavaVersion.VERSION_11
 
+// setup properties
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
+def PROJECT_URL = "git remote get-url origin".execute().text.replaceAll("[\\r\\n]","")
+//def COMMIT_VERSION = "git log --pretty=format:\"%H %cd %s\" -- ${projectDir}".execute().text.replaceAll("[\\r\\n]","")
+def COMMIT_VERSION = "git log --pretty=oneline -- ${projectDir}".execute().text.replaceAll("[\\r\\n]","")
+//println("git log --pretty=oneline  -- ${projectDir}".execute().text)
+//println("git log --help".execute().text)
+def BUILD_HOST = "hostname".execute().text.replaceAll("[\\r\\n]","")
 
 // Define my targets (RoboRIO) and artifacts (deployable files)
 // This is added by GradleRIO's backing project DeployUtils.
@@ -100,8 +107,15 @@ wpi.sim.addDriverstation()
 // knows where to look for our Robot Class.
 jar {
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
-    manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+	manifest {
+		attributes 'Main-Class': ROBOT_MAIN_CLASS
+		attributes 'Specification-Title': project.name
+		attributes 'Specification-Vendor': "Red Storm Robotics"
+		attributes 'Implementation-Vendor': PROJECT_URL
+		attributes 'Implementation-Version': "${COMMIT_VERSION} -- ${new Date().format("yyyy-MM-dd HH.mm.ss.SSSSS Z")}"
+		attributes 'Implementation-Title': "${project.name} at ${BUILD_HOST}:${projectDir}"
+	}
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 // Configure jar and deploy tasks
