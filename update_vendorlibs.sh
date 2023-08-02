@@ -1,6 +1,6 @@
 #!/bin/bash
 echo updating Phoenix libs
-gradle vendordep --url=https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/PhoenixProAnd5-frc2023-latest.json
+gradle vendordep --url=https://maven.ctr-electronics.com/release/com/ctre/phoenix/Phoenix-frc2022-latest.json
 echo updating PhotonVision libs
 gradle vendordep --url=https://maven.photonvision.org/repository/internal/org/photonvision/PhotonLib-json/1.0/PhotonLib-json-1.0.json
 echo updating Rev libs
