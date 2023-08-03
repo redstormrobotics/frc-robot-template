@@ -40,7 +40,7 @@ public class ModeAuton extends Mode {
         this.autonSelected = this.autonList[0];
     }
 
-    protected boolean Init() {
+    protected boolean init() {
         autonTimer.reset();
         autonTimer.start();
         return true;
@@ -67,11 +67,27 @@ public class ModeAuton extends Mode {
         return false;
     }
 
+    protected void loop() {
+        // Run Valid Auton Modes by Name
+        if (autonSelected != null) {
+            autonSelected.Loop();
+        } else {
+            done();
+        }
+    }
+
+    private void done() {
+
+    }
     public interface AutonMode {
         public String getName();
 
         public void Loop();
     }
+
+    // ===============================================================================================
+    // Add Modes Below
+    // ===============================================================================================
 
     public class AutoModeNothing implements AutonMode {
         public String getName() {
@@ -85,22 +101,6 @@ public class ModeAuton extends Mode {
         }
     }
 
-    protected void Loop() {
-        // Run Valid Auton Modes by Name
-        if (autonSelected != null) {
-            autonSelected.Loop();
-        } else {
-            done();
-        }
-    }
-
-    private void done() {
-
-    }
-
-    // ===============================================================================================
-    // Add Modes Below
-    // ===============================================================================================
 
     public class AutoModeBackup implements AutonMode {
         public String getName() {

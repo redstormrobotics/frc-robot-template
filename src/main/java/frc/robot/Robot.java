@@ -175,60 +175,60 @@ public class Robot extends TimedRobot {
 		m_autoSelected = m_chooser.getSelected();
 		// m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
 		System.out.println("Auto selected: " + m_autoSelected);
-		modeAuton.Initialize(runnable);
+		modeAuton.initialize(runnable);
 		modeAuton.selectAuton(m_autoSelected);
 	}
 
 	/** This function is called periodically during autonomous. */
 	@Override
 	public void autonomousPeriodic() {
-		modeAuton.Periodic();
+		modeAuton.periodic();
 	}
 
 	@Override
 	public void teleopInit() {
 		gp0.selectWindows(m_driverWindows.getSelected());
 		gp1.selectWindows(m_driverWindows.getSelected());
-		modeTeleOp.Initialize(runnable);
+		modeTeleOp.initialize(runnable);
 	}
 
 	@Override
 	public void teleopPeriodic() {
-		modeTeleOp.Periodic();
+		modeTeleOp.periodic();
 	}
 
 	@Override
 	public void disabledInit() {
-		modeDisabled.Initialize(runnable);
+		modeDisabled.initialize(runnable);
 	}
 
 	@Override
 	public void disabledPeriodic() {
-		modeDisabled.Periodic();
+		modeDisabled.periodic();
 	}
 
 	@Override
 	public void testInit() {
 		gp0.selectWindows(m_driverWindows.getSelected());
 		gp1.selectWindows(m_driverWindows.getSelected());
-		modeTest.Initialize(runnable);
+		modeTest.initialize(runnable);
 	}
 
 	@Override
 	public void testPeriodic() {
-		modeTest.Periodic();
+		modeTest.periodic();
 	}
 
 	@Override
 	public void simulationInit() {
 		gp0.selectWindows(m_driverWindows.getSelected());
 		gp1.selectWindows(m_driverWindows.getSelected());
-		modeSimulation.Initialize(runnable);
+		modeSimulation.initialize(runnable);
 	}
 
 	@Override
 	public void simulationPeriodic() {
-		modeSimulation.Periodic();
+		modeSimulation.periodic();
 	}
 
 	// Wrapper to create motors in a detectable way

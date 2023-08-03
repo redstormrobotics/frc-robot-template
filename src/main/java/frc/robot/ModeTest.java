@@ -30,9 +30,9 @@ public class ModeTest extends Mode {
         super(config);
     }
 
-    protected boolean Init() {
+    protected boolean init() {
         return true;
     }
 
-    protected void Loop() {}
+    protected void loop() {}
 }

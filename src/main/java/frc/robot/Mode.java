@@ -39,29 +39,29 @@ public class Mode {
         this.config = config;
     }
 
-    public void Initialize(boolean okToAttempt) {
+    public void initialize(boolean okToAttempt) {
         if ((config == null) || (!okToAttempt)) {
             initOkay = false;
             return;
         }
 
-        initOkay = Init();
+        initOkay = init();
     }
 
-    public void Periodic() {
+    public void periodic() {
         if (initOkay) {
             SmartDashboard.putString("Mode", "Running");
-            Loop();
+            loop();
         } else {
             SmartDashboard.putString("Mode", "Failed to Init");
         }
     }
 
-    protected boolean Init() {
+    protected boolean init() {
         return true;
     }
 
-    protected void Loop() {
+    protected void loop() {
         //
     }
 }

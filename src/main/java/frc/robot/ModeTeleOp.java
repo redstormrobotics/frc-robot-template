@@ -40,11 +40,11 @@ public class ModeTeleOp extends Mode {
         this.driveTrain = driveTrain;
     }
 
-    protected boolean Init() {
+    protected boolean init() {
         return true;
     }
 
-    protected void Loop() {
+    protected void loop() {
         SmartDashboard.putNumber("Left X", gp0.getLeftX());
         SmartDashboard.putNumber("Left Y", gp0.getLeftY());
         SmartDashboard.putNumber("Right X", gp0.getRightX());
