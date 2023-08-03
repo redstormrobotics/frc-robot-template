@@ -2,6 +2,7 @@
 # If you remove items from this file, intellisense might break.
 
 !.vscode/settings.json
+.vscode/*
 
 !.wpilib
 !.wpilib/*
