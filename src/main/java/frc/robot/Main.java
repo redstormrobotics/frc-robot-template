@@ -11,21 +11,22 @@ import edu.wpi.first.wpilibj.RobotBase;
  * you are doing, do not modify this file except to change the parameter class to the startRobot
  * call.
  */
-public final class Main 
-{
+public final class Main {
   private Main() {}
 
   /**
    * Main initialization function. Do not perform any initialization here.
    *
-   * <p>If you change your main robot class, change the parameter type.
+   * <p>
+   * If you change your main robot class, change the parameter type.
    */
   public static void main(String... args) {
     try {
       Package robotPackage = Main.class.getPackage();
-      System.out.println("Starting robot " + robotPackage.getImplementationTitle() + " at version " + robotPackage.getImplementationVersion());
+      System.out.println("Starting robot " + robotPackage.getImplementationTitle() + " at version "
+          + robotPackage.getImplementationVersion());
       RobotBase.startRobot(Robot::new);
-    } catch(Throwable t) {
+    } catch (Throwable t) {
       System.err.println("Robot died: " + t.toString());
       t.printStackTrace();
       printErrors(t.getCause());
@@ -33,8 +34,7 @@ public final class Main
   }
 
   static private void printErrors(Throwable t) {
-    if(t != null)
-    {
+    if (t != null) {
       System.err.println("caused by: " + t.toString());
       t.printStackTrace();
       printErrors(t.getCause());

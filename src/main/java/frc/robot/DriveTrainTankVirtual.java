@@ -1,12 +1,12 @@
 /*
  * ===============================================================================================
- * Red Storm Robotics 2020/21
+ * Red Storm Robotics 2022/23
  * ===============================================================================================
- * SIMULATION MODE / / This contains the Simulation controls and drivers
+ * Virtual Drive Train
  * ===============================================================================================
- * Hardware: / / None Directly (Only That Used By Dependencies)
+ * Hardware: / / None. This is a stub.
  * ===============================================================================================
- * 3rd Party Dependencies: None
+ * 3rd Party Dependencies: / / None
  * ===============================================================================================
  * Permission is hereby granted, free of charge, to any / person obtaining a copy of this software
  * and associated / documentation files (the "Software"), to deal in the / Software without
@@ -24,15 +24,63 @@
  */
 package frc.robot;
 
-public class ModeSimulation extends Mode {
+public class DriveTrainTankVirtual implements DriveTrainTank {
 
-    public ModeSimulation(Config config) {
-        super(config);
+    public DriveTrainTankVirtual() {}
+
+    public void Init() {}
+
+    public void configBrakeOnStop() {}
+
+    public void configCoastOnStop() {}
+
+    public void drive(double forward, double right) {}
+
+    public void drive(double forward, double right, double limit) {}
+
+    public void drive(double forward, double right, double limit, boolean useBrake) {}
+
+    public double adjustLeftDrive(double forward, double right, double limit) {
+        return 0.0;
     }
 
-    protected boolean Init() {
+    public double adjustRightDrive(double forward, double right, double limit) {
+        return 0.0;
+    }
+
+    public void setSpeedLimit(SPEED speedLimit) {}
+
+    public void setSpeedLimit(double speedLimit) {}
+
+    public void setSpeedBoost() {}
+
+    public void setSpeedCreep() {}
+
+    public void setNormalSpeed() {}
+
+    public void stopAll() {}
+
+    public void brake() {}
+
+    public void regoToHoldingPosition() {}
+
+    public void markEncoderLeftPosition() {}
+
+    public void markEncoderRightPosition() {}
+
+    public double getMarkedEncoderLeftPosition() {
+        return 0.0;
+    }
+
+    public double getMarkedEncoderRightPosition() {
+        return 0.0;
+    }
+
+    public void updateBrakePosition(double leftInches, double rightInches) {}
+
+    public void setTargetPosition(double leftInches, double rightInches) {}
+
+    public boolean areWeThereYet() {
         return true;
     }
-
-    protected void Loop() {}
 }

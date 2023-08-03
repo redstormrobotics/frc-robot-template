@@ -3,6 +3,7 @@
 
 .vscode
 .vscode/*
+!.vscode/settings.json
 
 !.wpilib
 !.wpilib/*
