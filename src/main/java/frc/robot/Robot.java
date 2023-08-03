@@ -100,10 +100,10 @@ public class Robot extends TimedRobot {
 
 		// initialize drive train
 		try {
-			BaseMotorController driveFR = safelyCreateVictorSPX(10);
-			BaseMotorController driveBR = safelyCreateVictorSPX(11);
-			BaseMotorController driveBL = safelyCreateVictorSPX(12);
-			BaseMotorController driveFL = safelyCreateVictorSPX(13);
+			BaseMotorController driveFR = safelyCreateVictorSPX(2);
+			BaseMotorController driveBR = safelyCreateVictorSPX(4);
+			BaseMotorController driveBL = safelyCreateVictorSPX(1);
+			BaseMotorController driveFL = safelyCreateVictorSPX(3);
 			if (driveFL != null && driveFR != null) {
 				// we can create a drive train
 				BaseMotorController[] left =
