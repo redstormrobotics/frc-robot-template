@@ -25,25 +25,35 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class ModeAuton extends Mode {
 
-    private Timer autonTimer = new Timer();
-    private DriveTrainTank driveTrain;
+    private final Timer autonTimer;
+    private final DriveTrainTank driveTrain;
     private final AutonMode[] autonList;
     private AutonMode autonSelected;
+    private final SendableChooser<String> autoChooser;
 
     public ModeAuton(Config config, DriveTrainTank driveTrain) {
         super(config);
+        this.autonTimer = new Timer();
         this.driveTrain = driveTrain;
-        this.autonList = new AutonMode[] {new AutoModeNothing(), new AutoModeBackup(),};
+        this.autonList = new AutonMode[] {new AutoModeNothing(), new AutoModeBackup()};
         this.autonSelected = this.autonList[0];
+        this.autoChooser = new SendableChooser<>();
+        for (int i = 0; i < autonList.length; i++) {
+            this.autoChooser.addOption(autonList[i].getName(), autonList[i].getName());
+        }
+        this.autoChooser.setDefaultOption(autonList[0].getName(), autonList[0].getName());
+        SmartDashboard.putData("Auton", this.autoChooser);
     }
 
     protected boolean init() {
         autonTimer.reset();
         autonTimer.start();
-        return true;
+        return selectAuton(autoChooser.getSelected());
     }
 
     public String[] getAutonList() {
@@ -79,6 +89,7 @@ public class ModeAuton extends Mode {
     private void done() {
 
     }
+
     public interface AutonMode {
         public String getName();
 

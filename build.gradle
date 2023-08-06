@@ -22,8 +22,8 @@ targetCompatibility = JavaVersion.VERSION_11
 
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
 def PROJECT_URL = "git remote get-url origin".execute().text.replaceAll("[\\r\\n]","")
-//def COMMIT_VERSION = "git log --pretty=format:\"%H %cd %s\" -- ${projectDir}".execute().text.replaceAll("[\\r\\n]","")
-def COMMIT_VERSION = "git log --pretty=oneline -- ${projectDir}".execute().text.replaceAll("[\\r\\n]","")
+def COMMIT_VERSION = "git log --pretty=oneline -1 -- ${projectDir}".execute().text.replaceAll("[\\r\\n]","")
+def UNCOMMMITED = "git diff --name-status".execute().text.replaceAll("[\\r\\n]"," ")
 //println("git log --pretty=oneline  -- ${projectDir}".execute().text)
 //println("git log --help".execute().text)
 def BUILD_HOST = "hostname".execute().text.replaceAll("[\\r\\n]","")
@@ -109,7 +109,7 @@ jar {
 		attributes 'Specification-Title': project.name
 		attributes 'Specification-Vendor': "Red Storm Robotics"
 		attributes 'Implementation-Vendor': PROJECT_URL
-		attributes 'Implementation-Version': "${COMMIT_VERSION} -- ${new Date().format("yyyy-MM-dd HH.mm.ss.SSSSS Z")}"
+		attributes 'Implementation-Version': "${UNCOMMMITED}${COMMIT_VERSION} -- ${new Date().format("yyyy-MM-dd HH.mm.ss.SSSSS Z")}"
 		attributes 'Implementation-Title': "${project.name} at ${BUILD_HOST}:${projectDir}"
 	}
     duplicatesStrategy = DuplicatesStrategy.INCLUDE

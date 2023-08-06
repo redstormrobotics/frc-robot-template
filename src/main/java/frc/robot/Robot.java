@@ -30,7 +30,7 @@ import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
-
+import edu.wpi.first.hal.PowerDistributionVersion;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
@@ -49,11 +49,7 @@ public class Robot extends TimedRobot {
 
 	// User-Side Controls
 	private boolean runnable;
-	private static final String kDefaultAuto = "Default";
-	private static final String kCustomAuto = "My Auto";
-	private String m_autoSelected;
-	private final SendableChooser<String> m_chooser = new SendableChooser<>();
-	private final SendableChooser<Boolean> m_driverWindows = new SendableChooser<>();
+	private final SendableChooser<Boolean> driverPlatformChooser = new SendableChooser<>();
 	private Gamepad gp0;
 	private Gamepad gp1;
 
@@ -83,12 +79,9 @@ public class Robot extends TimedRobot {
 		DriverStation.startDataLog(DataLogManager.getLog(), true);
 
 		// Initialize User-Side Controls
-		m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
-		m_chooser.addOption("My Auto", kCustomAuto);
-		SmartDashboard.putData("Auto choices", m_chooser);
-		m_driverWindows.setDefaultOption("Windows", true);
-		m_driverWindows.addOption("Linux", false);
-		SmartDashboard.putData("Driver Platform", m_driverWindows);
+		driverPlatformChooser.setDefaultOption("Windows", true);
+		driverPlatformChooser.addOption("Linux", false);
+		SmartDashboard.putData("Driver Platform", driverPlatformChooser);
 
 		// Initialize Gamepads
 		gp0 = new Gamepad(0);
@@ -125,7 +118,17 @@ public class Robot extends TimedRobot {
 		// Setup Power Distrubution Hub
 		try {
 			pdu = new PowerDistribution();
-			pdu.clearStickyFaults();
+			PowerDistributionVersion pduVer = pdu.getVersion();
+			if (pduVer != null && pduVer.hardwareMajor != 0) {
+				health.warning("PDU",
+						"Found PDU version " + pduVer.hardwareMajor + "." + pduVer.hardwareMinor
+								+ " (" + pduVer.firmwareFix + "." + pduVer.firmwareMinor + "."
+								+ pduVer.firmwareFix + ")");
+				pdu.clearStickyFaults();
+			} else {
+				pdu = null;
+				health.warning("PDU", "No PDU found! ");
+			}
 		} catch (Exception e) {
 			health.warning("PDU", "Unable to find PDU: " + e.getMessage());
 			pdu = null;
@@ -172,11 +175,7 @@ public class Robot extends TimedRobot {
 	 */
 	@Override
 	public void autonomousInit() {
-		m_autoSelected = m_chooser.getSelected();
-		// m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
-		System.out.println("Auto selected: " + m_autoSelected);
 		modeAuton.initialize(runnable);
-		modeAuton.selectAuton(m_autoSelected);
 	}
 
 	/** This function is called periodically during autonomous. */
@@ -187,8 +186,8 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void teleopInit() {
-		gp0.selectWindows(m_driverWindows.getSelected());
-		gp1.selectWindows(m_driverWindows.getSelected());
+		gp0.selectWindows(driverPlatformChooser.getSelected());
+		gp1.selectWindows(driverPlatformChooser.getSelected());
 		modeTeleOp.initialize(runnable);
 	}
 
@@ -209,8 +208,8 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void testInit() {
-		gp0.selectWindows(m_driverWindows.getSelected());
-		gp1.selectWindows(m_driverWindows.getSelected());
+		gp0.selectWindows(driverPlatformChooser.getSelected());
+		gp1.selectWindows(driverPlatformChooser.getSelected());
 		modeTest.initialize(runnable);
 	}
 
@@ -221,8 +220,8 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void simulationInit() {
-		gp0.selectWindows(m_driverWindows.getSelected());
-		gp1.selectWindows(m_driverWindows.getSelected());
+		gp0.selectWindows(driverPlatformChooser.getSelected());
+		gp1.selectWindows(driverPlatformChooser.getSelected());
 		modeSimulation.initialize(runnable);
 	}
 

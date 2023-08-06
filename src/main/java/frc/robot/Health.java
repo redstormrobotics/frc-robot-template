@@ -34,6 +34,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Health {
     private static Health _me = null;
+    private static String codeVersion = "Unknown";
     private String errors = "";
     private double cur_battery_voltage = 15.0;
     private double min_battery_voltage = 15.0;
@@ -80,8 +81,7 @@ public class Health {
 
         // Periodically report all health information
         if ((loop_counter % 10) == 0) {
-
-            info("version", 1);
+            info("code version", codeVersion);
             info("health - loop count", loop_counter);
             info("health - loop time", cur_loop_time);
             info("health - battery", cur_battery_voltage);
@@ -135,6 +135,10 @@ public class Health {
             _me = new Health(0);
         }
         return _me;
+    }
+
+    public static void setVersion(String v) {
+        Health.codeVersion = v;
     }
 
     public static void verbosity(int level) {

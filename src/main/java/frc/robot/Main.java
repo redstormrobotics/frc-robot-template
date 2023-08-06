@@ -25,6 +25,8 @@ public final class Main {
       Package robotPackage = Main.class.getPackage();
       System.out.println("Starting robot " + robotPackage.getImplementationTitle() + " at version "
           + robotPackage.getImplementationVersion());
+      Health.setVersion(
+          robotPackage.getImplementationTitle() + " " + robotPackage.getImplementationVersion());
       RobotBase.startRobot(Robot::new);
     } catch (Throwable t) {
       System.err.println("Robot died: " + t.toString());
