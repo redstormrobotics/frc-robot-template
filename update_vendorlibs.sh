@@ -18,4 +18,4 @@ gradle vendordep --url=https://software-metadata.revrobotics.com/REVLib-2024.jso
 
 # from https://www.playingwithfusion.com/docview.php?docid=1205
 echo =================== updating PlayingWithFusion libs ===================
-gradle vendordep --url=https://www.playingwithfusion.com/frc/playingwithfusion2023.json
+gradle vendordep --url=https://www.playingwithfusion.com/frc/playingwithfusion2024.json
