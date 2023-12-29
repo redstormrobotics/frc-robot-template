@@ -25,6 +25,6 @@ gradle vendordep --url=https://software-metadata.revrobotics.com/REVLib-2024.jso
 
 # from https://www.playingwithfusion.com/docview.php?docid=1205
 echo =================== updating PlayingWithFusion libs ===================
-gradle vendordep --url=https://www.playingwithfusion.com/frc/playingwithfusion2023.json
-grep -q frcYear vendordeps/playingwithfusion2023.json || echo Patching PlayingWithFusion to set year as 2024
-sed -i '/"version": "2023.01.17",/a "frcYear": "2024",' vendordeps/playingwithfusion2023.json
+gradle vendordep --url=https://www.playingwithfusion.com/frc/playingwithfusion2024.json
+#grep -q frcYear vendordeps/playingwithfusion2023.json || echo Patching PlayingWithFusion to set year as 2024
+#sed -i '/"version": "2023.01.17",/a "frcYear": "2024",' vendordeps/playingwithfusion2023.json
