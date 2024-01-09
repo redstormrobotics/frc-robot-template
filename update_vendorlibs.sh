@@ -12,8 +12,8 @@ gradle vendordep --url=https://raw.githubusercontent.com/wpilibsuite/allwpilib/m
 # from https://store.ctr-electronics.com/software/
 # or https://github.com/CrossTheRoadElec/Phoenix-Releases/releases
 echo =================== updating Phoenix libs ===================
-gradle vendordep --url=https://maven.ctr-electronics.com/release/com/ctre/phoenix6/latest/Phoenix6-frc2024-beta-latest.json
-gradle vendordep --url=https://maven.ctr-electronics.com/release/com/ctre/phoenix/Phoenix5-frc2024-beta-latest.json
+gradle vendordep --url=https://maven.ctr-electronics.com/release/com/ctre/phoenix6/latest/Phoenix6-frc2024-latest.json
+gradle vendordep --url=https://maven.ctr-electronics.com/release/com/ctre/phoenix/Phoenix5-frc2024-latest.json
 
 # from https://docs.photonvision.org/en/latest/docs/programming/photonlib/adding-vendordep.html
 echo =================== updating PhotonVision libs ===================
