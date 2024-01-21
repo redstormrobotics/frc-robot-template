@@ -31,7 +31,7 @@ package frc.robot;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
 
-public class DriveTrainTankBasicController implements DriveTrainTank {
+public class DriveTrainTankBasicController implements DriveTrain {
 
     // Drive Base
     private BaseMotorController rdrive;
@@ -77,6 +77,7 @@ public class DriveTrainTankBasicController implements DriveTrainTank {
         }
     }
 
+    @Override
     public void Init() {
         if (rdrive == null)
             return;
@@ -100,28 +101,29 @@ public class DriveTrainTankBasicController implements DriveTrainTank {
         enableThis();
     }
 
-    // Not supported by Neo's
-    public void configBrakeOnStop() {}
-
-    public void configCoastOnStop() {}
-
     // ===============================================================================================
 
-    public void drive(double forward, double right) {
-        drive(forward, right, SpeedLimit, false);
+    @Override
+    public void drive(double forward, double rightTurn) {
+        drive(forward, rightTurn, 0,0, SpeedLimit, false);
+    }
+
+    @Override
+    public void drive(double forward, double rightTurn, double rightStrafe) {
+        drive(forward, rightTurn, rightStrafe, SpeedLimit, false);
     }
 
     // limit should be between 0-1, 1 = 100%, 0.5 = 50% speed
-    public void drive(double forward, double right, double limit) {
-        drive(forward, right, limit, false);
+    @Override
+    public void drive(double forward, double rightTurn, double rightStrafe, double limit) {
+        drive(forward, rightTurn, rightStrafe, limit, false);
     }
 
     // limit should be between 0-1, 1 = 100%, 0.5 = 50% speed
-    public void drive(double forward, double right, double limit, boolean useBrake) {
+    @Override
+    public void drive(double forward, double rightTurn, double rightStrafe, double limit, boolean useBrake) {
         if (rdrive == null)
             return;
-
-        // TODO brake code
 
         double leftDrive = adjustLeftDrive(forward, right, limit);
         double rightDrive = adjustRightDrive(forward, right, limit);
@@ -136,24 +138,38 @@ public class DriveTrainTankBasicController implements DriveTrainTank {
         rdrive.set(ControlMode.PercentOutput, rightDrive);
     }
 
+    @Override
+    public void stopAll() {
+        ldrive.set(ControlMode.PercentOutput, 0.0);
+        rdrive.set(ControlMode.PercentOutput, 0.0);
+    }
+
+    // ===============================================================================================
+
+    @Override
     public void setSpeedBoost() {}
 
+    @Override
     public void setSpeedCreep() {}
 
+    @Override
     public void setNormalSpeed() {}
 
-    public double adjustLeftDrive(double forward, double right, double limit) {
+    @Override
+    private double adjustLeftDrive(double forward, double right, double limit) {
         double adjustedSpeed =
                 (((forward + right) / Math.max(1.0, Math.abs(forward) + Math.abs(right)))) * limit;
         return adjustedSpeed;
     }
 
-    public double adjustRightDrive(double forward, double right, double limit) {
+    @Override
+    private double adjustRightDrive(double forward, double right, double limit) {
         double adjustedSpeed =
                 (((forward - right) / Math.max(1.0, Math.abs(forward) + Math.abs(right)))) * limit;
         return adjustedSpeed;
     }
 
+    @Override
     public void setSpeedLimit(SPEED speedLimit) {
         switch (speedLimit) {
             case SLOW:
@@ -171,66 +187,26 @@ public class DriveTrainTankBasicController implements DriveTrainTank {
         }
     }
 
+    @Override
     public void setSpeedLimit(double speedLimit) {
         SpeedLimit = speedLimit;
     }
 
-    public void stopAll() {
-        ldrive.set(ControlMode.PercentOutput, 0.0);
-        rdrive.set(ControlMode.PercentOutput, 0.0);
+    // ===============================================================================================
 
-    }
-
-    public void brake() {
-        stopAll();
-    }
-
-    // Configure Drive Wheels for Velocity Control (Acceleration-Controlled Tele-Op)
-    private void enableThis() {
-        if (rdrive == null)
-            return;
-        // TODO configure velocity control
-    }
-
-    public void setTargetPosition(double leftInches, double rightInches) {}
-
-    public boolean areWeThereYet() {
-        return true;
-    }
+    // Not supported by base motor class. We'd have to step up to something fancier first
+    @Override
+    public void configBrakeOnStop() {}
 
     @Override
-    public void regoToHoldingPosition() {
-        // TODO Auto-generated method stub
+    public void configCoastOnStop() {}
 
-    }
+    // ===============================================================================================
+    
+    // Auton Support
+    @Override
+    public boolean setTargetPosition(double x, double y, double heading) { return true; }
 
     @Override
-    public void markEncoderLeftPosition() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void markEncoderRightPosition() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public double getMarkedEncoderLeftPosition() {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    @Override
-    public double getMarkedEncoderRightPosition() {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    @Override
-    public void updateBrakePosition(double leftInches, double rightInches) {
-        // TODO Auto-generated method stub
-
-    }
+    public boolean areWeThereYet() { return true; }
 }

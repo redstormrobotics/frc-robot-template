@@ -49,7 +49,12 @@ public class Robot extends TimedRobot {
 
 	// User-Side Controls
 	private boolean runnable;
-	private final SendableChooser<Boolean> driverPlatformChooser = new SendableChooser<>();
+	private String m_autoSelected;
+	private final SendableChooser<String> m_chooser = new SendableChooser<>();
+	private final SendableChooser<Boolean> m_driverWindows = new SendableChooser<>();
+	private final SendableChooser<Integer> m_healthinfo = new SendableChooser<>();
+
+	// UI
 	private Gamepad gp0;
 	private Gamepad gp1;
 
@@ -66,6 +71,7 @@ public class Robot extends TimedRobot {
 	private ModeSimulation modeSimulation;
 	private ModeTest modeTest;
 
+    // ===============================================================================================
 	/**
 	 * This function is run when the robot is first started up and should be used for any
 	 * initialization code.
@@ -86,6 +92,17 @@ public class Robot extends TimedRobot {
 		// Initialize Gamepads
 		gp0 = new Gamepad(0);
 		gp1 = new Gamepad(1);
+
+		// Initialize Smart Dashboard Driver Controller Platform Selection
+		m_driverWindows.setDefaultOption("Windows", true);
+		m_driverWindows.addOption("Linux", false);
+		SmartDashboard.putData("Driver Platform", m_driverWindows);
+
+		// Initialize Health Log Level Selection
+		m_healthinfo.setDefaultOption("Info", Health.INFO);
+		m_healthinfo.addOption("Debug", Health.DEBUG);
+		m_healthinfo.addOption("Trace", Health.TRACE);
+		SmartDashboard.putData("Log Level", m_healthinfo);
 
 		// Initialization of all Hardware
 		health = new Health(0);
@@ -109,28 +126,28 @@ public class Robot extends TimedRobot {
 				driveTrain = new DriveTrainTankBasicController(left, right);
 			} else {
 				health.addError("Unable to find motor controllers for drive train");
-				driveTrain = new DriveTrainTankVirtual();
+				driveTrain = new DriveTrainVirtual();
 			}
 		} catch (Exception e) {
 			health.addError("Drive train failed", e);
-			driveTrain = new DriveTrainTankVirtual();
+			driveTrain = new DriveTrainVirtual();
 		}
 		// Setup Power Distrubution Hub
 		try {
 			pdu = new PowerDistribution();
 			PowerDistributionVersion pduVer = pdu.getVersion();
 			if (pduVer != null && pduVer.hardwareMajor != 0) {
-				health.warning("PDU",
+				Health.warning("PDU",
 						"Found PDU version " + pduVer.hardwareMajor + "." + pduVer.hardwareMinor
 								+ " (" + pduVer.firmwareFix + "." + pduVer.firmwareMinor + "."
 								+ pduVer.firmwareFix + ")");
 				pdu.clearStickyFaults();
 			} else {
 				pdu = null;
-				health.warning("PDU", "No PDU found! ");
+				Health.warning("PDU", "No PDU found! ");
 			}
 		} catch (Exception e) {
-			health.warning("PDU", "Unable to find PDU: " + e.getMessage());
+			Health.warning("PDU", "Unable to find PDU: " + e.getMessage());
 			pdu = null;
 		}
 
@@ -147,35 +164,31 @@ public class Robot extends TimedRobot {
 			runnable = false;
 		}
 
+		// Initialize UI Auton Selection
+		String auton_options[] = modeAuton.getAutons();
+		m_chooser.setDefaultOption(auton_options[0], auton_options[0]);
+		for (int i = 1; i < auton_options.length; i++) {
+			m_chooser.addOption(auton_options[i], auton_options[i]);
+		}
+		SmartDashboard.putData("Auton", m_chooser);
+
 		System.out.println("robotInit() complete");
 	}
 
-	/**
-	 * This function is called every 20 ms, no matter the mode. Use this for items like diagnostics
-	 * that you want ran during disabled, autonomous, teleoperated and test.
-	 *
-	 * <p>
-	 * This runs after the mode specific periodic functions, but before LiveWindow and
-	 * SmartDashboard integrated updating.
-	 */
+    // ===============================================================================================
+
 	@Override
 	public void robotPeriodic() {
 		health.loop(pdu);
 	}
 
-	/**
-	 * This autonomous (along with the chooser code above) shows how to select between different
-	 * autonomous modes using the dashboard. The sendable chooser code works with the Java
-	 * SmartDashboard.
-	 * 
-	 * <p>
-	 * You can add additional auto modes by adding additional comparisons to the switch structure
-	 * below with additional strings. If using the SendableChooser make sure to add them to the
-	 * chooser code above as well.
-	 */
 	@Override
 	public void autonomousInit() {
-		modeAuton.initialize(runnable);
+		grabUiControls();		
+		m_autoSelected = m_chooser.getSelected();
+		System.out.println("Auto selected: " + m_autoSelected);
+		modeAuton.Initialize(runnable);
+		modeAuton.selectAuton(m_autoSelected);
 	}
 
 	/** This function is called periodically during autonomous. */
@@ -186,8 +199,7 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void teleopInit() {
-		gp0.selectWindows(driverPlatformChooser.getSelected());
-		gp1.selectWindows(driverPlatformChooser.getSelected());
+		grabUiControls();
 		modeTeleOp.initialize(runnable);
 	}
 
@@ -198,6 +210,7 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void disabledInit() {
+		grabUiControls();
 		modeDisabled.initialize(runnable);
 	}
 
@@ -208,8 +221,7 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void testInit() {
-		gp0.selectWindows(driverPlatformChooser.getSelected());
-		gp1.selectWindows(driverPlatformChooser.getSelected());
+		grabUiControls();
 		modeTest.initialize(runnable);
 	}
 
@@ -220,8 +232,7 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void simulationInit() {
-		gp0.selectWindows(driverPlatformChooser.getSelected());
-		gp1.selectWindows(driverPlatformChooser.getSelected());
+		grabUiControls();
 		modeSimulation.initialize(runnable);
 	}
 
@@ -229,6 +240,27 @@ public class Robot extends TimedRobot {
 	public void simulationPeriodic() {
 		modeSimulation.periodic();
 	}
+
+    // ===============================================================================================
+
+	// Update Selections From UI (if present)
+	protected void grabUiControls() {
+		try {
+			boolean isWindows = m_driverWindows.getSelected();
+			Gamepad.selectWindows(isWindows);
+		} catch (Exception e) {
+			health.addError("Could not config controls");
+		}
+
+		try {
+			int healthValue = m_healthinfo.getSelected();
+			Health.verbosity(healthValue);
+		} catch (Exception e) {
+			Health.verbosity(Health.INFO);
+		}
+	}
+
+    // ===============================================================================================
 
 	// Wrapper to create motors in a detectable way
 	protected TalonFX safelyCreateTalonFX(int ID, boolean inverted) {

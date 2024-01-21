@@ -105,7 +105,7 @@ public class Gamepad {
 	}
 
 	public double getAdjustedLeftY() {
-		double val = -controller.getRawAxis(AxisMap[Axis.LeftStickX.getValue()]);
+		double val = -controller.getRawAxis(AxisMap[Axis.LeftStickY.getValue()]);
 		return Math.pow(val, 3);
 	}
 

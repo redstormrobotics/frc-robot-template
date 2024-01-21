@@ -24,63 +24,31 @@
  */
 package frc.robot;
 
-public class DriveTrainTankVirtual implements DriveTrainTank {
+public class DriveTrainVirtual implements DriveTrain {
 
-    public DriveTrainTankVirtual() {}
+    public DriveTrainVirtual() {}
 
     public void Init() {}
 
-    public void configBrakeOnStop() {}
-
-    public void configCoastOnStop() {}
-
-    public void drive(double forward, double right) {}
-
-    public void drive(double forward, double right, double limit) {}
-
-    public void drive(double forward, double right, double limit, boolean useBrake) {}
-
-    public double adjustLeftDrive(double forward, double right, double limit) {
-        return 0.0;
-    }
-
-    public double adjustRightDrive(double forward, double right, double limit) {
-        return 0.0;
-    }
-
-    public void setSpeedLimit(SPEED speedLimit) {}
-
-    public void setSpeedLimit(double speedLimit) {}
-
-    public void setSpeedBoost() {}
-
-    public void setSpeedCreep() {}
-
-    public void setNormalSpeed() {}
-
+    // Driving Controls
+    public void drive(double forward, double turnRight) {}
+    public void drive(double forward, double turnRight, double strafeRight) {}
+    public void drive(double forward, double turnRight, double strafeRight, double limit) {}
+    public void drive(double forward, double turnRight, double strafeRight, double limit, boolean useBrake) {}
     public void stopAll() {}
 
-    public void brake() {}
+    // Driving Speed Limits
+    public void setSpeedLimit(SPEED speedLimit) {}
+    public void setSpeedLimit(double speedLimit) {}
+    public void setSpeedBoost() {}
+    public void setSpeedCreep() {}
+    public void setNormalSpeed() {}
 
-    public void regoToHoldingPosition() {}
+    // Drivetrain Features
+    public void configBrakeOnStop() {}
+    public void configCoastOnStop() {}
 
-    public void markEncoderLeftPosition() {}
-
-    public void markEncoderRightPosition() {}
-
-    public double getMarkedEncoderLeftPosition() {
-        return 0.0;
-    }
-
-    public double getMarkedEncoderRightPosition() {
-        return 0.0;
-    }
-
-    public void updateBrakePosition(double leftInches, double rightInches) {}
-
-    public void setTargetPosition(double leftInches, double rightInches) {}
-
-    public boolean areWeThereYet() {
-        return true;
-    }
+    // Auton Support
+    public boolean setTargetPosition(double x, double y, double heading) { return true; }
+    public boolean areWeThereYet() { return true; }
 }

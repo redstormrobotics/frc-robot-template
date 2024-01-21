@@ -507,20 +507,20 @@ public class DriveSwerveImpl implements DriveSwerve {
 
             if (angle < canPositionRadians) {
                 //turn_angle.set(ControlMode.Position, Math.toDegrees(diffAbs));
-            Health.getHealth().info(corner + " target angle", diffAbs);
+            Health.info(corner + " target angle", diffAbs);
             } else {
                 //turn_angle.set(ControlMode.Position, Math.toDegrees(-diffAbs));
-                Health.getHealth().info(corner + " target angle", -diffAbs);
+                Health.info(corner + " target angle", -diffAbs);
             }
 
             speed.set(driveMode, length);
-            Health.getHealth().info(corner + " speed", length);
+            Health.info(corner + " speed", length);
 
         } else {
             //turn_angle.set(ControlMode.Position, 0);
             speed.set(driveMode, 0);
-            Health.getHealth().info(corner + " speed", 0.0);
-            Health.getHealth().info(corner + " target angle", 0.0);
+            Health.info(corner + " speed", 0.0);
+            Health.info(corner + " target angle", 0.0);
         }
         turn_angle.set(ControlMode.PercentOutput, 0.2);
 
