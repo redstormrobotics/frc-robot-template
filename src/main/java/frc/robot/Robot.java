@@ -29,9 +29,12 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import java.util.HashMap;
 import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
 import edu.wpi.first.hal.PowerDistributionVersion;
 import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.DigitalGlitchFilter;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -53,6 +56,8 @@ public class Robot extends TimedRobot {
 	private final SendableChooser<String> m_chooser = new SendableChooser<>();
 	private final SendableChooser<Boolean> m_driverWindows = new SendableChooser<>();
 	private final SendableChooser<Integer> m_healthinfo = new SendableChooser<>();
+	private final SendableChooser<String> m_bindset = new SendableChooser<>();
+	private final SendableChooser<String> d_bindset = new SendableChooser<>();
 
 	// UI
 	private Gamepad gp0;
@@ -63,6 +68,7 @@ public class Robot extends TimedRobot {
 	private Health health;
 	private DriveTrainTank driveTrain;
 	private PowerDistribution pdu;
+	private HashMap<Integer, DigitalInput>digitalinputs;
 
 	// Operating Modes
 	private ModeAuton modeAuton;
