@@ -66,7 +66,7 @@ public class Robot extends TimedRobot {
 	// Robot Hardware Attached:
 	private Config config;
 	private Health health;
-	private DriveTrainTank driveTrain;
+	private DriveTrain driveTrain;
 	private PowerDistribution pdu;
 	private HashMap<Integer, DigitalInput>digitalinputs;
 
@@ -91,13 +91,16 @@ public class Robot extends TimedRobot {
 		DriverStation.startDataLog(DataLogManager.getLog(), true);
 
 		// Initialize User-Side Controls
-		driverPlatformChooser.setDefaultOption("Windows", true);
-		driverPlatformChooser.addOption("Linux", false);
-		SmartDashboard.putData("Driver Platform", driverPlatformChooser);
+		m_driverWindows.setDefaultOption("Windows", true);
+		m_driverWindows.addOption("Linux", false);
+		SmartDashboard.putData("Driver Platform", m_driverWindows);
 
 		// Initialize Gamepads
 		gp0 = new Gamepad(0);
 		gp1 = new Gamepad(1);
+
+		//Initialize mappings
+		BindableMapper inputMapper = new BindableMapper(gp0, gp1, m_bindset, d_bindset, digitalinputs)
 
 		// Initialize Smart Dashboard Driver Controller Platform Selection
 		m_driverWindows.setDefaultOption("Windows", true);

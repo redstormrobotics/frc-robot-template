@@ -7,7 +7,7 @@ gradle clean
 
 # from https://raw.githubusercontent.com/wpilibsuite/allwpilib/main/wpilibNewCommands/WPILibNewCommands.json
 echo =================== updating WPILib ===================
-gradle vendordep --url=https://raw.githubusercontent.com/wpilibsuite/allwpilib/main/wpilibNewCommands/WPILibNewCommands.json
+gradle vendordep --url=https://raw.githubusercontent.com/wpilibsuite/allwpilib/v2024.3.2/wpilibNewCommands/WPILibNewCommands.json
 
 # from https://store.ctr-electronics.com/software/
 # or https://github.com/CrossTheRoadElec/Phoenix-Releases/releases

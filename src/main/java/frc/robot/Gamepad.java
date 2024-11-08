@@ -29,6 +29,7 @@ import edu.wpi.first.wpilibj.Joystick;
 public class Gamepad {
 
 	private final Joystick controller;
+	static boolean isWindows;
 
 	/*
 	 * BUTTONS AND AXES
