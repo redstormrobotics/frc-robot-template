@@ -41,6 +41,8 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.BindableMapper.DRIVE_BINDINGS;
+import frc.robot.BindableMapper.MECH_BINDINGS;
 
 /**
  * The Robot is configured to automatically run this class, and to call the functions corresponding
@@ -100,7 +102,7 @@ public class Robot extends TimedRobot {
 		gp1 = new Gamepad(1);
 
 		//Initialize mappings
-		BindableMapper inputMapper = new BindableMapper(gp0, gp1, m_bindset, d_bindset, digitalinputs)
+		BindableMapper inputMapper = new BindableMapper(gp0, gp1, m_bindset, d_bindset, digitalinputs);
 
 		// Initialize Smart Dashboard Driver Controller Platform Selection
 		m_driverWindows.setDefaultOption("Windows", true);
@@ -112,6 +114,13 @@ public class Robot extends TimedRobot {
 		m_healthinfo.addOption("Debug", Health.DEBUG);
 		m_healthinfo.addOption("Trace", Health.TRACE);
 		SmartDashboard.putData("Log Level", m_healthinfo);
+
+		//initialize Bindset selection
+		m_bindset.setDefaultOption("DEFAULT", MECH_BINDINGS.MECH_DEFAULT);
+		m_bindset.addOption("CAM", MECH_BINDINGS.CAM);
+		SmartDashboard.putData("Mech Bindset", m_bindset);
+		d_bindset.setDefaultOption("DEFAULT", DRIVE_BINDINGS.DRIVE_DEFAULT);
+		SmartDashboard.putData("Drive Bindset", d_bindset);
 
 		// Initialization of all Hardware
 		health = new Health(0);

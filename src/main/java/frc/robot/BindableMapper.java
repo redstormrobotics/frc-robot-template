@@ -64,6 +64,8 @@ public class BindableMapper {
 
         // DRIVE_DEFAULT
         HashMap<AXIS_ACTION,BindableAxis> ddefaxis= new HashMap<>();
+        ddefaxis.put(AXIS_ACTION.FWDREV, new BindableAxisImpl(gp0, BindableAxisImpl.axis.LY));
+        ddefaxis.put(AXIS_ACTION.TURN, new BindableAxisImpl(gp0, BindableAxisImpl.axis.RX));
 
         // Adding bindings to bindsets
 

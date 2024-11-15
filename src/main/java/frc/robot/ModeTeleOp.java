@@ -31,9 +31,9 @@ public class ModeTeleOp extends Mode {
     // Copies of objects that are used by this mode:
     Gamepad gp0;
     Gamepad gp1;
-    DriveTrainTank driveTrain;
+    DriveSwerveImpl driveTrain;
 
-    public ModeTeleOp(Config config, Gamepad gp0, Gamepad gp1, DriveTrainTank driveTrain) {
+    public ModeTeleOp(Config config, Gamepad gp0, Gamepad gp1, DriveTrain driveTrain) {
         super(config);
         this.gp0 = gp0;
         this.gp1 = gp1;
