@@ -77,10 +77,13 @@ public class BindableMapper {
         this.drvaxisbindset.put(DRIVE_BINDINGS.DRIVE_DEFAULT, ddefaxis);
 
         // Adding Bindsets to ShuffleBoard
+        
+        //MECH
         this.m_bindset = m_chosen;
         this.m_bindset.addOption("CAM", MECH_BINDINGS.CAM.name());
         this.m_bindset.setDefaultOption("DEFAULT", MECH_BINDINGS.MECH_DEFAULT.name());
 
+        //DRIVE
         this.d_bindset = d_chosen;
         this.d_bindset.setDefaultOption("DEFAULT", DRIVE_BINDINGS.DRIVE_DEFAULT.name());
 
