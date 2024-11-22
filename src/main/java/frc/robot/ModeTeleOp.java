@@ -32,12 +32,21 @@ public class ModeTeleOp extends Mode {
     Gamepad gp0;
     Gamepad gp1;
     DriveSwerveImpl driveTrain;
+    BindableMapper inputMapper;
+    BindableAxis AxisDriveX;
+    BindableAxis AxisDriveY;
+    BindableAxis AxisTurn;
+    BindableButton BtnThingy;
 
-    public ModeTeleOp(Config config, Gamepad gp0, Gamepad gp1, DriveTrain driveTrain) {
+    public ModeTeleOp(Config config, Gamepad gp0, Gamepad gp1, DriveSwerveImpl driveTrain) {
         super(config);
         this.gp0 = gp0;
         this.gp1 = gp1;
         this.driveTrain = driveTrain;
+        this.AxisDriveX = new BindableAxisDummy();
+        this.AxisDriveY = new BindableAxisDummy();
+        this.AxisTurn = new BindableAxisDummy();
+        this.BtnThingy = new BindableButtonDummy();
     }
 
     protected boolean init() {
@@ -51,8 +60,16 @@ public class ModeTeleOp extends Mode {
         SmartDashboard.putNumber("Right Y", gp0.getRightY());
 
         // Manual Driving Controls
-        double forward = gp0.getAdjustedLeftY();
-        double right = gp0.getAdjustedRightX();
-        driveTrain.drive(forward, right);
+        double driveX = AxisDriveX.getPosition();
+        double driveY = AxisDriveY.getPosition();
+        double turn = AxisTurn.getPosition();
+        
+        driveTrain.drive(driveY, turn);
+    }
+    public void updateMappings(){
+        this.AxisDriveX=this.inputMapper.getAxis(BindableMapper.AXIS_ACTION.DRIVEX, false);
+        this.AxisDriveY=this.inputMapper.getAxis(BindableMapper.AXIS_ACTION.DRIVEY, false);
+        this.AxisTurn=this.inputMapper.getAxis(BindableMapper.AXIS_ACTION.TURN , false);
+        this.BtnThingy=this.inputMapper.getButton(BindableMapper.BTN_ACTION.ACTIVATE_THINGY, true);
     }
 }

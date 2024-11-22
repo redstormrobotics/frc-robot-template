@@ -24,7 +24,8 @@ public class BindableMapper {
 
     public enum AXIS_ACTION {
         //put joystick/analog actions here
-        FWDREV,
+        DRIVEX,
+        DRIVEY,
         TURN,
     }
 
@@ -64,7 +65,8 @@ public class BindableMapper {
 
         // DRIVE_DEFAULT
         HashMap<AXIS_ACTION,BindableAxis> ddefaxis= new HashMap<>();
-        ddefaxis.put(AXIS_ACTION.FWDREV, new BindableAxisImpl(gp0, BindableAxisImpl.axis.LY));
+        ddefaxis.put(AXIS_ACTION.DRIVEX, new BindableAxisImpl(gp0, BindableAxisImpl.axis.LX));
+        ddefaxis.put(AXIS_ACTION.DRIVEY, new BindableAxisImpl(gp0, BindableAxisImpl.axis.LY));
         ddefaxis.put(AXIS_ACTION.TURN, new BindableAxisImpl(gp0, BindableAxisImpl.axis.RX));
 
         // Adding bindings to bindsets
