@@ -31,12 +31,12 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 public class ModeAuton extends Mode {
 
     private final Timer autonTimer;
-    private final DriveTrainTank driveTrain;
+    private final DriveSwerve driveTrain;
     private final AutonMode[] autonList;
     private AutonMode autonSelected;
     private final SendableChooser<String> autoChooser;
 
-    public ModeAuton(Config config, DriveTrainTank driveTrain) {
+    public ModeAuton(Config config, DriveSwerve driveTrain) {
         super(config);
         this.autonTimer = new Timer();
         this.driveTrain = driveTrain;

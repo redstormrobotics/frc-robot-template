@@ -68,7 +68,7 @@ public class Robot extends TimedRobot {
 	// Robot Hardware Attached:
 	private Config config;
 	private Health health;
-	private DriveTrain driveTrain;
+	private DriveSwerveImpl driveTrain;
 	private PowerDistribution pdu;
 	private HashMap<Integer, DigitalInput>digitalinputs;
 

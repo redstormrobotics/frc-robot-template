@@ -98,14 +98,13 @@ public class DriveTrainTankBasicController implements DriveTrain {
             motor.follow(ldrive);
         }
 
-        enableThis();
     }
 
     // ===============================================================================================
 
     @Override
     public void drive(double forward, double rightTurn) {
-        drive(forward, rightTurn, 0,0, SpeedLimit, false);
+        drive(forward, rightTurn, 0.0, SpeedLimit, false);
     }
 
     @Override
@@ -125,8 +124,8 @@ public class DriveTrainTankBasicController implements DriveTrain {
         if (rdrive == null)
             return;
 
-        double leftDrive = adjustLeftDrive(forward, right, limit);
-        double rightDrive = adjustRightDrive(forward, right, limit);
+       double leftDrive = adjustLeftDrive(forward, /*right*/0.0, limit); //needs proper values
+        double rightDrive = adjustRightDrive(forward, /*left */0.0, limit); //same here
         if (Math.abs(leftDrive) < .1 && Math.abs(rightDrive) < .1) {
             stopAll();
             return;
