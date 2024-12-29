@@ -98,22 +98,25 @@ public class Gamepad {
 		return -controller.getRawAxis(AxisMap[Axis.RightStickY.getValue()]);
 	}
 
-	// These Stick Reading Functions Scale for Higher Resolution Towards the Center
+	@Deprecated  // WPILib now scales
 	public double getAdjustedLeftX() {
 		double val = controller.getRawAxis(AxisMap[Axis.LeftStickX.getValue()]);
 		return Math.pow(val, 3);
 	}
 
+	@Deprecated  // WPILib now scales
 	public double getAdjustedLeftY() {
 		double val = -controller.getRawAxis(AxisMap[Axis.LeftStickY.getValue()]);
 		return Math.pow(val, 3);
 	}
 
+	@Deprecated  // WPILib now scales
 	public double getAdjustedRightX() {
 		double val = controller.getRawAxis(AxisMap[Axis.RightStickX.getValue()]);
 		return Math.pow(val, 3);
 	}
 
+	@Deprecated  // WPILib now scales
 	public double getAdjustedRightY() {
 		double val = -controller.getRawAxis(AxisMap[Axis.RightStickY.getValue()]);
 		return Math.pow(val, 3);

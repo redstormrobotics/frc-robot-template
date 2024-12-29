@@ -25,15 +25,16 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.DriveSwerve.MODE;
 
 public class ModeTeleOp extends Mode {
 
     // Copies of objects that are used by this mode:
     Gamepad gp0;
     Gamepad gp1;
-    DriveTrainTank driveTrain;
+    DriveSwerve driveTrain;
 
-    public ModeTeleOp(Config config, Gamepad gp0, Gamepad gp1, DriveTrainTank driveTrain) {
+    public ModeTeleOp(Config config, Gamepad gp0, Gamepad gp1, DriveSwerve driveTrain) {
         super(config);
         this.gp0 = gp0;
         this.gp1 = gp1;
@@ -45,14 +46,10 @@ public class ModeTeleOp extends Mode {
     }
 
     protected void loop() {
-        SmartDashboard.putNumber("Left X", gp0.getLeftX());
-        SmartDashboard.putNumber("Left Y", gp0.getLeftY());
-        SmartDashboard.putNumber("Right X", gp0.getRightX());
-        SmartDashboard.putNumber("Right Y", gp0.getRightY());
-
-        // Manual Driving Controls
-        double forward = gp0.getAdjustedLeftY();
-        double right = gp0.getAdjustedRightX();
-        driveTrain.drive(forward, right);
+        // Manual Driving Controls, add additional controls here
+        double forward = gp0.getLeftY();
+        double right = gp0.getLeftX();
+        double spin = gp0.getRightX();
+        driveTrain.drive(MODE.DRIVE, Vector.fromCart(right, forward, 0.0), spin);
     }
 }

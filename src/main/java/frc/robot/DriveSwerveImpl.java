@@ -1,264 +1,152 @@
-/*============================================================
-/ Red Storm Robotics 2023
-/=============================================================
-/ DRIVE TRAIN for TeleOp
-/ 
-/ This Drive Train module provides a consistent interface for
-/ TeleOp Modes while allowing the user to switch between Raw
-/ and Velocity-Controlled modes.
-/=============================================================
-/ Hardware:
-/
-/ 2 gearboxes (one for left, one for right) driven by multiple 
-/   TalonFX motors, configured to drive in parallel. The actual
-/   number of motors driving this gearbox can be specified when
-/   this object is constructed.
-/=============================================================
-/ 3rd Party Dependencies:
-/
-/ http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/Phoenix-latest.json
-/=============================================================
-/ Permission is hereby granted, free of charge, to any 
-/ person obtaining a copy of this software and associated 
-/ documentation files (the "Software"), to deal in the 
-/ Software without restriction, including without limitation 
-/ the rights to use, copy, modify, merge, publish, distribute, 
-/ sublicense, and/or sell copies of the Software, and to 
-/ permit persons to whom the Software is furnished to do so, 
-/ subject to the following conditions:
-/ 
-/ The above copyright notice and this permission notice shall 
-/ be included in all copies or substantial portions of the Software.
-/
-/ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY 
-/ KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE 
-/ WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR 
-/ PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS 
-/ OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR 
-/ OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR 
-/ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
-/ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-/=================================================================*/
+/*
+ * ============================================================ / Red Storm Robotics 2023
+ * /============================================================= / DRIVE TRAIN for TeleOp / / This
+ * Drive Train module provides a consistent interface for / TeleOp Modes while allowing the user to
+ * switch between Raw / and Velocity-Controlled modes.
+ * /============================================================= / Hardware: / / 2 gearboxes (one
+ * for left, one for right) driven by multiple / TalonFX motors, configured to drive in parallel.
+ * The actual / number of motors driving this gearbox can be specified when / this object is
+ * constructed. /============================================================= / 3rd Party
+ * Dependencies: / /
+ * http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/Phoenix-latest.json
+ * /============================================================= / Permission is hereby granted,
+ * free of charge, to any / person obtaining a copy of this software and associated / documentation
+ * files (the "Software"), to deal in the / Software without restriction, including without
+ * limitation / the rights to use, copy, modify, merge, publish, distribute, / sublicense, and/or
+ * sell copies of the Software, and to / permit persons to whom the Software is furnished to do so,
+ * / subject to the following conditions: / / The above copyright notice and this permission notice
+ * shall / be included in all copies or substantial portions of the Software. / / THE SOFTWARE IS
+ * PROVIDED "AS IS", WITHOUT WARRANTY OF ANY / KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+ * TO THE / WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR / PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS / OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR / OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR / OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE / SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * /=================================================================
+ */
 
 package frc.robot;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.FeedbackDevice;
-import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.RemoteSensorSource;
-import com.ctre.phoenix.motorcontrol.StatusFrame;
-import com.ctre.phoenix.motorcontrol.TalonFXFeedbackDevice;
-import com.ctre.phoenix.motorcontrol.can.TalonFXConfiguration;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
-import com.ctre.phoenix.sensors.WPI_CANCoder;
-import com.ctre.phoenix.motorcontrol.RemoteSensorSource;
-
-import edu.wpi.first.wpilibj.ADXRS450_Gyro;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.Pigeon2;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class DriveSwerveImpl implements DriveSwerve {
 
-    private final WPI_TalonFX frDrive;
-    private final WPI_TalonFX frTurn;
-    private final WPI_CANCoder frCANCoder;
-    private final WPI_TalonFX flDrive;
-    private final WPI_TalonFX flTurn;
-    private final WPI_CANCoder flCANCoder;
-    private final WPI_TalonFX brDrive;
-    private final WPI_TalonFX brTurn;
-    private final WPI_CANCoder brCANCoder;
-    private final WPI_TalonFX blDrive;
-    private final WPI_TalonFX blTurn;
-    private final WPI_CANCoder blCANCoder;
-    private final ADXRS450_Gyro gyro; //id 2
+    private SwerveModuleFalcon frCorner;
+    private SwerveModuleFalcon flCorner;
+    private SwerveModuleFalcon brCorner;
+    private SwerveModuleFalcon blCorner;
+    private final Pigeon2 gyro; // id 2
+    private double gyroOffset = 0.0;
 
     private double CC_BR;
     private double CC_BL;
     private double CC_FR;
     private double CC_FL;
 
-    private final double FROffset = (320.9765);
-    private final double FLOffset = (78.5742);
-    private final double BROffset = (303.3984);
-    private final double BLOffset = (31.640);
+
+    final private Vector frLocation = Vector.fromPolarDegrees(15.39, 90.0 + 39.52, 0.0);
+    final private Vector brLocation = Vector.fromPolarDegrees(15.39, 180.0 + 42.37, 0.0);
+    final private Vector blLocation = Vector.fromPolarDegrees(15.39, 270.0 + 42.37, 0.0);
+    final private Vector flLocation = Vector.fromPolarDegrees(15.39, 90.0 - 39.52, 0.0);
+    // get furthest distance
+    final private double maxWheelDist =
+            Math.max(Math.max(frLocation.getLengthXY(), flLocation.getLengthXY()),
+                    Math.max(brLocation.getLengthXY(), blLocation.getLengthXY()));
+    // calcuate corner rotation scaling factor
+    final private double frRotationScaling = frLocation.getLengthXY() / maxWheelDist;
+    final private double flRotationScaling = flLocation.getLengthXY() / maxWheelDist;
+    final private double brRotationScaling = brLocation.getLengthXY() / maxWheelDist;
+    final private double blRotationScaling = blLocation.getLengthXY() / maxWheelDist;
+
+    public final double SPEED_FAST = 1.0;
+    public final double SPEED_MED = 0.7;
+    public final double SPEED_SLOW = 0.4;
+    private double speed = SPEED_SLOW;
+
+    private Vector targetPosition = null;
+
+    private boolean atTargetPosition = false;
 
 
-    protected TalonFXConfiguration turnMotorConfig = new TalonFXConfiguration();
-    protected TalonFXConfiguration driveMotorConfig = new TalonFXConfiguration();
-    public final static Gains kGains_Turn = new Gains(0.1, 0.0, 0.0, 0.0, 100, 0.50);
-    public final static Gains kGains_Turning = new Gains(2.0, 0.0, 4.0, 0.0, 200, 1.00);
-    public final static Gains kGains_Drive = new Gains(0.1, 0.0, 0.0, 0.0, 100, 0.50);
-    public final static Gains kGains_Driving = new Gains(2.0, 0.0, 4.0, 0.0, 200, 1.00);
-    // change values if needed
-    public final static double kNeutralDeadband = 0.001;
-    private final double ABSOLUTE_MAX_CURRENT = 15.0;
-    public final static int kTimeoutMs = 30;
+    private double turnReduce = 0.8;
 
-    private final double CANCODER_CPR = 4096;
+    private double maxWheelError = 0.0;
 
-    public void init() {
-        initCorner(blDrive, blTurn, blCANCoder);
-        initCorner(brDrive, brTurn, brCANCoder);
-        initCorner(flDrive, flTurn, flCANCoder);
-        initCorner(frDrive, frTurn, frCANCoder);
+    public DriveSwerveImpl(TalonFX frDrive, TalonFX frTurn, CANcoder frCANCoder, TalonFX flDrive,
+            TalonFX flTurn, CANcoder flCANCoder, TalonFX brDrive, TalonFX brTurn,
+            CANcoder brCANCoder, TalonFX blDrive, TalonFX blTurn, CANcoder blCANCoder,
+            Pigeon2 gyro, Robot.ROBOTNAME robotName) {
+
+        this.gyro = gyro;
+        frCorner = new SwerveModuleFalcon("fr", frDrive, frTurn, frCANCoder,
+                frLocation.getAngleXYDegree() / 360.0, robotName);
+        brCorner = new SwerveModuleFalcon("br", brDrive, brTurn, brCANCoder,
+                brLocation.getAngleXYDegree() / 360.0, robotName);
+        blCorner = new SwerveModuleFalcon("bl", blDrive, blTurn, blCANCoder,
+                blLocation.getAngleXYDegree() / 360.0, robotName);
+        flCorner = new SwerveModuleFalcon("fl", flDrive, flTurn, flCANCoder,
+                flLocation.getAngleXYDegree() / 360.0, robotName);
+        gyro.reset();
     }
 
-    public void initCorner(WPI_TalonFX drive, WPI_TalonFX turn, WPI_CANCoder canCoder) {
-
-        /** Distance Configs */
-
-        /* Configure the left Talon's selected sensor as integrated sensor */
-        // TODO: link turnMotor to our own canCoder
-        turnMotorConfig.remoteFilter0.remoteSensorDeviceID = canCoder.getDeviceID();
-        turnMotorConfig.remoteFilter0.remoteSensorSource = RemoteSensorSource.CANCoder;
-        driveMotorConfig.primaryPID.selectedFeedbackSensor = TalonFXFeedbackDevice.IntegratedSensor.toFeedbackDevice(); // Local
-        // Feedback
-        // Source
-        /*
-         * Configure the Remote (Left) Talon's selected sensor as a remote sensor for
-         * the right Talon
-         */
-        turnMotorConfig.remoteFilter0.remoteSensorDeviceID = turn.getDeviceID(); // Device ID of Remote Source
-        turnMotorConfig.remoteFilter0.remoteSensorSource = RemoteSensorSource.CANCoder; // Remote Source
-                                                                                                      // Type
-
-        driveMotorConfig.remoteFilter0.remoteSensorDeviceID = turn.getDeviceID(); // Device ID of Remote Source
-        driveMotorConfig.remoteFilter0.remoteSensorSource = RemoteSensorSource.TalonFX_SelectedSensor; // Remote Source
-                                                                                                       // Type
-
-        /* FPID for Velocity */
-        turnMotorConfig.slot0.kF = kGains_Turn.kF;
-        turnMotorConfig.slot0.kP = kGains_Turn.kP;
-        turnMotorConfig.slot0.kI = kGains_Turn.kI;
-        turnMotorConfig.slot0.kD = kGains_Turn.kD;
-        turnMotorConfig.slot0.integralZone = kGains_Turn.kIzone;
-        turnMotorConfig.slot0.closedLoopPeakOutput = kGains_Turn.kPeakOutput;
-
-        driveMotorConfig.slot0.kF = kGains_Drive.kF;
-        driveMotorConfig.slot0.kP = kGains_Drive.kP;
-        driveMotorConfig.slot0.kI = kGains_Drive.kI;
-        driveMotorConfig.slot0.kD = kGains_Drive.kD;
-        driveMotorConfig.slot0.integralZone = kGains_Drive.kIzone;
-        driveMotorConfig.slot0.closedLoopPeakOutput = kGains_Drive.kPeakOutput;
-
-        /*
-         * false means talon's local output is PID0 + PID1, and other side Talon is PID0
-         * - PID1
-         * This is typical when the master is the right Talon FX and using Pigeon
-         * 
-         * true means talon's local output is PID0 - PID1, and other side Talon is PID0
-         * + PID1
-         * This is typical when the master is the left Talon FX and using Pigeon
-         */
-
-        /* FPID for Heading */
-        turnMotorConfig.slot1.kF = kGains_Turning.kF;
-        turnMotorConfig.slot1.kP = kGains_Turning.kP;
-        turnMotorConfig.slot1.kI = kGains_Turning.kI;
-        turnMotorConfig.slot1.kD = kGains_Turning.kD;
-        turnMotorConfig.slot1.integralZone = kGains_Turning.kIzone;
-        turnMotorConfig.slot1.closedLoopPeakOutput = kGains_Turning.kPeakOutput;
-
-        driveMotorConfig.slot1.kF = kGains_Driving.kF;
-        driveMotorConfig.slot1.kP = kGains_Driving.kP;
-        driveMotorConfig.slot1.kI = kGains_Driving.kI;
-        driveMotorConfig.slot1.kD = kGains_Driving.kD;
-        driveMotorConfig.slot1.integralZone = kGains_Driving.kIzone;
-        driveMotorConfig.slot1.closedLoopPeakOutput = kGains_Driving.kPeakOutput;
-
-        /* Config the neutral deadband. */
-        turnMotorConfig.neutralDeadband = kNeutralDeadband;
-        driveMotorConfig.neutralDeadband = kNeutralDeadband;
-
-        /**
-         * 1ms per loop. PID loop can be slowed down if need be.
-         * For example,
-         * - if sensor updates are too slow
-         * - sensor deltas are very small per update, so derivative error never gets
-         * large enough to be useful.
-         * - sensor movement is very slow causing the derivative error to be near zero.
-         */
-        int closedLoopTimeMs = 1;
-        turnMotorConfig.slot0.closedLoopPeriod = closedLoopTimeMs;
-        turnMotorConfig.slot1.closedLoopPeriod = closedLoopTimeMs;
-        turnMotorConfig.slot2.closedLoopPeriod = closedLoopTimeMs;
-        turnMotorConfig.slot3.closedLoopPeriod = closedLoopTimeMs;
-
-        driveMotorConfig.slot0.closedLoopPeriod = closedLoopTimeMs;
-        driveMotorConfig.slot1.closedLoopPeriod = closedLoopTimeMs;
-        driveMotorConfig.slot2.closedLoopPeriod = closedLoopTimeMs;
-        driveMotorConfig.slot3.closedLoopPeriod = closedLoopTimeMs;
-
-        /* Motion Magic Configs */ // og value for all = 2000
-        turnMotorConfig.motionAcceleration = 2000; // (distance units per 100 ms) per second
-        turnMotorConfig.motionCruiseVelocity = 2000; // distance units per 100 ms
-
-        driveMotorConfig.motionAcceleration = 2000; // (distance units per 100 ms) per second
-        driveMotorConfig.motionCruiseVelocity = 2000; // distance units per 100 ms
-
-        // TODO FIGURE OUT CURRENT LIMITS
-        turnMotorConfig.statorCurrLimit.currentLimit = ABSOLUTE_MAX_CURRENT;
-        turnMotorConfig.statorCurrLimit.enable = false;
-
-        driveMotorConfig.statorCurrLimit.currentLimit = ABSOLUTE_MAX_CURRENT;
-        driveMotorConfig.statorCurrLimit.enable = false;
-        /* APPLY the config settings */
-        turn.configAllSettings(turnMotorConfig);
-        drive.configAllSettings(driveMotorConfig);
-
-        /* Set status frame periods to ensure we don't have stale data */
-        turn.setStatusFramePeriod(StatusFrame.Status_12_Feedback1, 20, kTimeoutMs);
-        turn.setStatusFramePeriod(StatusFrame.Status_13_Base_PIDF0, 20, kTimeoutMs);
-        turn.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 5, kTimeoutMs);
-
-        turn.setNeutralMode(NeutralMode.Brake);
-
-        drive.setStatusFramePeriod(StatusFrame.Status_12_Feedback1, 20, kTimeoutMs);
-        drive.setStatusFramePeriod(StatusFrame.Status_13_Base_PIDF0, 20, kTimeoutMs);
-        drive.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 5, kTimeoutMs);
-
-        drive.setNeutralMode(NeutralMode.Brake);
-
+    public void init() {
+        frCorner.init();
+        flCorner.init();
+        brCorner.init();
+        blCorner.init();
+        resetGyroHeading();
     }
 
     public void enable() {
         resetGyro();
     }
 
-    public void drive(MODE mode, Vector drive, Vector spin) {
+    public void turnOff(){
+        frCorner.turnOff();
+        flCorner.turnOff();
+        brCorner.turnOff();
+        blCorner.turnOff();
+    }
+    public void resetGyroHeading() {
+        gyroOffset = +gyro.getYaw().getValueAsDouble() - 45.0;
+    }
+
+    public void drive(MODE mode, Vector drive, double spin) {
         switch (mode) {
             case DRIVE:
-            case POSITIONDRIVE:
-                driveDrive(mode, drive.getY(), drive.getX(), spin.getZ());
+            case DRIVEPERCENT:
+                driveDrive(mode, drive, spin);
                 break;
             case BRAKE:
                 brake();
                 break;
+            case DRIVETOPOSITION:
+                targetPosition = drive;
+                atTargetPosition = false;
+            case DRIVECONTINUE:
+                driveDrive(mode, drive, spin);
+                
         }
     }
 
     // Sum of all drive train motors (goofy ahh unit)
     public double getTotalDriveCurrent() {
-        return frDrive.getStatorCurrent() +
-                frTurn.getStatorCurrent() +
-                flDrive.getStatorCurrent() +
-                flTurn.getStatorCurrent() +
-                brDrive.getStatorCurrent() +
-                brTurn.getStatorCurrent() +
-                blDrive.getStatorCurrent() +
-                blTurn.getStatorCurrent();
+        return frCorner.getTotalCurrent() + flCorner.getTotalCurrent() + brCorner.getTotalCurrent()
+                + blCorner.getTotalCurrent();
     }
 
     public double getDistanceEncoderPosition(WHEEL_ID wheelID) {
         switch (wheelID) {
             case FL:
-                return flDrive.getSelectedSensorPosition();
+                return flCorner.getDistanceEncoderPosition();
             case FR:
-                return frDrive.getSelectedSensorPosition();
+                return frCorner.getDistanceEncoderPosition();
             case BL:
-                return blDrive.getSelectedSensorPosition();
+                return blCorner.getDistanceEncoderPosition();
             case BR:
-                return brDrive.getSelectedSensorPosition();
+                return brCorner.getDistanceEncoderPosition();
         }
         return 0.0;
     }
@@ -266,28 +154,28 @@ public class DriveSwerveImpl implements DriveSwerve {
     public double getAngleEncoderCount(WHEEL_ID wheelID) {
         switch (wheelID) {
             case FL:
-                return flTurn.getSelectedSensorPosition();
+                return flCorner.getAngleEncoderCount();
             case FR:
-                return frTurn.getSelectedSensorPosition();
+                return frCorner.getAngleEncoderCount();
             case BL:
-                return blTurn.getSelectedSensorPosition();
+                return blCorner.getAngleEncoderCount();
             case BR:
-                return brTurn.getSelectedSensorPosition();
+                return brCorner.getAngleEncoderCount();
         }
         return 0.0;
     }
 
-    public double getWheelRPM(WHEEL_ID wheelID) {
-        double RPMCOEF = 0.29296875;
+    public double getWheelRPS(WHEEL_ID wheelID) {
+        final double RPSCOEF = 0.29296875;
         switch (wheelID) {
             case FL:
-                return flDrive.getSelectedSensorVelocity() * RPMCOEF;
+                return flCorner.getWheelRPS() * RPSCOEF;
             case FR:
-                return frDrive.getSelectedSensorVelocity() * RPMCOEF;
+                return frCorner.getWheelRPS() * RPSCOEF;
             case BL:
-                return blDrive.getSelectedSensorVelocity() * RPMCOEF;
+                return blCorner.getWheelRPS() * RPSCOEF;
             case BR:
-                return brDrive.getSelectedSensorVelocity() * RPMCOEF;
+                return brCorner.getWheelRPS() * RPSCOEF;
         }
         return 0.0;
     }
@@ -296,246 +184,120 @@ public class DriveSwerveImpl implements DriveSwerve {
     public double getWheelAngle(WHEEL_ID wheelID) {
         switch (wheelID) {
             case FL:
-                return flTurn.getSelectedSensorPosition();
+                return flCorner.getWheelAngleRadians();
             case FR:
-                return frTurn.getSelectedSensorPosition();
+                return frCorner.getWheelAngleRadians();
             case BL:
-                return blTurn.getSelectedSensorPosition();
+                return blCorner.getWheelAngleRadians();
             case BR:
-                return brTurn.getSelectedSensorPosition();
+                return brCorner.getWheelAngleRadians();
         }
         return 0.0;
     }
 
+    public double getMaxWheelError() {
+        return maxWheelError;
+    }
+    public double gyroAngle(){
+        return gyro.getYaw().getValueAsDouble();
+    }
+    public double robotAngle(){                      // zero is aiming at front-right module?
+        return -gyro.getYaw().getValueAsDouble() + gyroOffset + 45.0; // gyro.getAngle returns degrees
+    }
+    public void driveDrive(MODE mode, Vector drive, double spin) {
+        SmartDashboard.putNumber("DriveSwerve/forward", drive.getY()); // -1 to 1
+        SmartDashboard.putNumber("DriveSwerve/strafe", drive.getX()); // -1 to 1
+        SmartDashboard.putNumber("DriveSwerve/turn", spin); // -1 to 1
+        SmartDashboard.putNumber("DriveSwerve/Total Drive CurdriveDriverent: ", getTotalDriveCurrent());
+
+
+        double robotAngle = gyroOffset - gyro.getYaw().getValueAsDouble(); // gyro.getAngle returns degrees
+        SmartDashboard.putNumber("DriveSwerve/gyro", robotAngle);
+
+        double adjustedSpin = spin * turnReduce;
+        Vector focDrive = Vector.fromPolarDegrees(drive.getLengthXY(),
+                drive.getAngleXYDegree() + robotAngle, drive.getZ());
+
+        Vector targetFR =
+                translateToWheel("fr", focDrive, adjustedSpin, frLocation, frRotationScaling);
+        Vector targetFL =
+                translateToWheel("fl", focDrive, adjustedSpin, flLocation, flRotationScaling);
+        Vector targetBR =
+                translateToWheel("br", focDrive, adjustedSpin, brLocation, brRotationScaling);
+        Vector targetBL =
+                translateToWheel("bl", focDrive, adjustedSpin, blLocation, blRotationScaling);
+
+        boolean optimize = mode != MODE.DRIVECONTINUE && mode != MODE.DRIVETOPOSITION;
+        // Drive actual swerve motor modules based on calculations
+        double frError = frCorner.driveAngle(targetFR, optimize);
+        double flError = flCorner.driveAngle(targetFL, optimize);
+        double brError = brCorner.driveAngle(targetBR, optimize);
+        double blError = blCorner.driveAngle(targetBL, optimize);
+        // find the largest error
+        maxWheelError = Math.max(Math.max(Math.abs(frError), Math.abs(flError)),
+                Math.max(Math.abs(brError), Math.abs(blError)));
+        SmartDashboard.putNumber("DriveSwerve/Max wheel error", maxWheelError);
+        // scale the drive speed for the mode
+        double scaleFactor;
+        switch (mode) {
+            case BRAKE:
+                scaleFactor = 0.0;
+                break;
+            case DRIVETOPOSITION:
+            case DRIVECONTINUE:
+                scaleFactor = (maxWheelError < 0.1) ? Math.cos(maxWheelError) : 0.0;
+            default:
+                scaleFactor = Math.cos(maxWheelError);
+        }
+        // set the driving scale
+        frCorner.setDriveErrorScale(scaleFactor);
+        flCorner.setDriveErrorScale(scaleFactor);
+        brCorner.setDriveErrorScale(scaleFactor);
+        blCorner.setDriveErrorScale(scaleFactor);
+        // now that all corners are set, apply speed
+        if (mode == MODE.DRIVE){
+            frCorner.applyVelocity();
+            flCorner.applyVelocity();
+            brCorner.applyVelocity();
+            blCorner.applyVelocity();
+        } else if(mode == MODE.DRIVETOPOSITION){
+            frCorner.setTargetPosition(targetFR);
+            flCorner.setTargetPosition(targetFL);
+            brCorner.setTargetPosition(targetBR);
+            blCorner.setTargetPosition(targetBL);
+        } else if(mode == MODE.DRIVECONTINUE){
+                    boolean fr = frCorner.applyPosition();
+                    boolean fl = flCorner.applyPosition();
+                    boolean br = brCorner.applyPosition();
+                    boolean bl = blCorner.applyPosition();
+            atTargetPosition = 
+                    fr && fl && br && bl;
+        } else {
+            frCorner.applySpeed();
+            flCorner.applySpeed();
+            brCorner.applySpeed();
+            blCorner.applySpeed();
+        }
+        
+    }
     
-
-    public DriveSwerveImpl(
-            WPI_TalonFX frDrive, WPI_TalonFX frTurn, WPI_CANCoder frCANCoder,
-            WPI_TalonFX flDrive, WPI_TalonFX flTurn, WPI_CANCoder flCANCoder,
-            WPI_TalonFX brDrive, WPI_TalonFX brTurn, WPI_CANCoder brCANCoder,
-            WPI_TalonFX blDrive, WPI_TalonFX blTurn, WPI_CANCoder blCANCoder,
-            ADXRS450_Gyro gyro) {
-        this.frDrive = frDrive;
-        this.frTurn = frTurn;
-        this.frCANCoder = frCANCoder;
-        this.flDrive = flDrive;
-        this.flTurn = flTurn;
-        this.flCANCoder = flCANCoder;
-        this.brDrive = brDrive;
-        this.brTurn = brTurn;
-        this.brCANCoder = brCANCoder;
-        this.blDrive = blDrive;
-        this.blTurn = blTurn;
-        this.blCANCoder = blCANCoder;
-        this.gyro = gyro;
-
-        gyro.calibrate();
+    public boolean isAtPosition(){
+        return atTargetPosition;
     }
 
-    public void driveDrive(MODE mode, double forward, double strafe, double turn) {
-        SmartDashboard.putNumber("drive forward", forward);
-        SmartDashboard.putNumber("drive strafe", strafe);
-        SmartDashboard.putNumber("drive turn", turn);
-        double turningValue = gyro.getAngle();
-        SmartDashboard.putNumber("Gyro", turningValue);
-
-
-        Vector targetFR = Convert(forward, strafe, turn, gyro, FROffset, -225);
-        Vector targetFL = Convert(forward, strafe, turn, gyro, FLOffset, -135);
-        Vector targetBR = Convert(forward, strafe, turn, gyro, BROffset,45);
-        Vector targetBL = Convert(forward, strafe, turn, gyro, BLOffset,-45);
-
-
-        // SmartDashboard.putNumber("FR X", targetFR.getX()); //135
-        // SmartDashboard.putNumber("FR Angle", targetFR.getAngleXY()); //307
-        // SmartDashboard.putNumber("FR Y", targetFR.getY()); //-180
-        SmartDashboard.putNumber("FR Length", targetFR.getLengthXY());
-        SmartDashboard.putNumber("FL Length", targetFL.getLengthXY());
-        SmartDashboard.putNumber("BL Length", targetBL.getLengthXY());
-        SmartDashboard.putNumber("BR Length", targetBR.getLengthXY());
-
-        SmartDashboard.putNumber("FR Wheel Angle", frCANCoder.getAbsolutePosition());
-        SmartDashboard.putNumber("FL Wheel Angle", flCANCoder.getAbsolutePosition());
-        SmartDashboard.putNumber("BL Wheel Angle", blCANCoder.getAbsolutePosition());
-        SmartDashboard.putNumber("BR Wheel Angle", brCANCoder.getAbsolutePosition());
-
-        
-
-        driveCorner(mode, WHEEL_ID.FR, targetFR, frDrive, frTurn, frCANCoder);
-        driveCorner(mode, WHEEL_ID.FL, targetFL, flDrive, flTurn, flCANCoder);
-        driveCorner(mode, WHEEL_ID.BR, targetBR, brDrive, brTurn, brCANCoder);
-        driveCorner(mode, WHEEL_ID.BL, targetBL, blDrive, blTurn, blCANCoder);
-    }
-
-    public void test(boolean reset) {
-        double turningValue = gyro.getAngle();
-        // Invert the direction of the turn if we are going backwards
-        // turningValue = Math.copySign(turningValue, m_joystick.getY());
-        SmartDashboard.putNumber("Gyro", turningValue);
-
-        boolean move = false;
-
-        if (reset) {
-            move = true;
-            CC_FR = frCANCoder.getAbsolutePosition();
-            CC_FL = flCANCoder.getAbsolutePosition();
-            CC_BR = brCANCoder.getAbsolutePosition();
-            CC_BL = blCANCoder.getAbsolutePosition();
-
-        } else {
-            SmartDashboard.putNumber("fr_Offset", frCANCoder.getAbsolutePosition() - CC_FR);
-            SmartDashboard.putNumber("fl_Offset", flCANCoder.getAbsolutePosition() - CC_FL);
-            SmartDashboard.putNumber("br_Offset", brCANCoder.getAbsolutePosition() - CC_BR);
-            SmartDashboard.putNumber("bl_Offset", blCANCoder.getAbsolutePosition() - CC_BL);
-        }
-
-        Vector targetFR = ConvertNoGyro(move, -225);
-        Vector targetFL = ConvertNoGyro(move, -135);
-        Vector targetRR = ConvertNoGyro(move, 45);
-        Vector targetRL = ConvertNoGyro(move, -45);
-
-        driveCorner(MODE.DRIVE, WHEEL_ID.FR, targetFR, frDrive, frTurn, frCANCoder);
-        driveCorner(MODE.DRIVE, WHEEL_ID.FL, targetFL, flDrive, flTurn, flCANCoder);
-        driveCorner(MODE.DRIVE, WHEEL_ID.BR, targetRR, brDrive, brTurn, brCANCoder);
-        driveCorner(MODE.DRIVE, WHEEL_ID.BR, targetRL, blDrive, blTurn, blCANCoder);
-    }
-
-    public Vector Convert(double forward, double strafe, double turn, ADXRS450_Gyro gyro, double offset,
-            double turnOffset) {
-        SmartDashboard.putNumber("Z", turn);
-        // Reduce z (spin by 0.5)
-        double turnReduce = 0.3;
-        Vector zv = Vector.fromPolar(-turn * turnReduce, turnOffset, 0.0);
-
-        double speedReduce = 0.5;
-        // Reduce xy by 0.5
-        Vector xyv = Vector.fromCart(-strafe * speedReduce, forward * speedReduce, 0.0);
-
-        xyv = Vector.fromPolar(xyv.getLengthXY(), xyv.getAngleXY() + gyro.getAngle(), xyv.getZ());
-
-        Vector finv = xyv.addVector(zv);
-        double angle = finv.getAngleXY();
-        angle = angle + offset;
-        while (angle > 360) {
-            angle = angle - 360;
-        }
-        while (angle < 0) {
-            angle = angle + 360;
-        }
-
-        return Vector.fromPolar(finv.getLengthXY(), angle, finv.getZ());
-    }
-
-    public Vector ConvertNoGyro(boolean move, double turnOffset) {
-        // SmartDashboard.putNumber("Z", joy.getRawAxis(4));
-        // Reduce z (spin by 0.5)
-        double turnReduce = 0.3;
-        Vector zv = Vector.fromPolar(turnOffset, 0 * turnReduce, 0.0);
-
-        double speedReduce = 0.5;
-        // Reduce xy by 0.5
-        Vector xyv = Vector.fromCart(0 * speedReduce, 0.0 * speedReduce, 0.0);
-        if (move) {
-            xyv = Vector.fromCart(0 * speedReduce, 0.2 * speedReduce, 0.0);
-        }
-
-        Vector finv = xyv.addVector(zv);
-        double angle = finv.getAngleXY();
-        
-        while (angle > 360) {
-            angle = angle - 360;
-        }
-        while (angle < 0) {
-            angle = angle + 360;
-        }
-
-        return Vector.fromPolar(finv.getLengthXY(), angle, finv.getZ());
-    }
-
-    public void driveCorner(MODE mode, WHEEL_ID corner, Vector target, WPI_TalonFX speed, final WPI_TalonFX turn_angle,
-            WPI_CANCoder _CANCoder) // Turns Wheel
-    {
-        ControlMode driveMode = mode == MODE.DRIVE ? ControlMode.PercentOutput : ControlMode.Position;
-        double angle = target.getAngleXY();
-        double length = target.getLengthXY();
-        double canPositionDegree = _CANCoder.getAbsolutePosition() % 360.0;
-        if (canPositionDegree < 0.0) {
-            canPositionDegree += 360.0;
-        }
-        double canPositionRadians = Math.toRadians(canPositionDegree);
-
-        // SmartDashboard.putNumber(corner + " RawA", canPosition);
-        // SmartDashboard.putNumber(corner + " Target Angle", angle);
-        // SmartDashboard.putNumber(corner + " CANCoder Angle", canPosition);
-        SmartDashboard.putNumber(corner + " Length", length);
-
-        if (length > 0.02) {
-
-            while (angle - canPositionRadians < -Math.PI) {
-                angle = angle + Math.PI * 2;
-            }
-
-            while (angle - canPositionRadians > Math.PI) {
-                angle = angle - Math.PI * 2;
-            }
-
-            double diffAbs = Math.abs(angle - canPositionRadians);
-            double diff = angle - canPositionRadians;
-
-            if (diff > Math.PI) {
-                length = 0.0 - length;
-                angle = angle - 2.0 * Math.PI;
-            } else if (diff < -Math.PI) {
-                length = 0.0 - length;
-                angle = angle + 2.0 * Math.PI;
-            }
-
-            diffAbs = Math.abs(angle - canPositionRadians);
-
-            SmartDashboard.putNumber(corner + " Diff", diffAbs);
-            diffAbs = diffAbs / 50.0;
-
-            double turnSpeed = 0.5;
-            if (diffAbs > turnSpeed) {
-                diffAbs = turnSpeed;
-            }
-            if (diffAbs < -turnSpeed) {
-                diffAbs = -turnSpeed;
-            }
-            // TODO: convert turn to set position/PID
-            // #wouldBeMoreEfficient, like absEncoder??? :O
-
-            if (angle < canPositionRadians) {
-                //turn_angle.set(ControlMode.Position, Math.toDegrees(diffAbs));
-            Health.info(corner + " target angle", diffAbs);
-            } else {
-                //turn_angle.set(ControlMode.Position, Math.toDegrees(-diffAbs));
-                Health.info(corner + " target angle", -diffAbs);
-            }
-
-            speed.set(driveMode, length);
-            Health.info(corner + " speed", length);
-
-        } else {
-            //turn_angle.set(ControlMode.Position, 0);
-            speed.set(driveMode, 0);
-            Health.info(corner + " speed", 0.0);
-            Health.info(corner + " target angle", 0.0);
-        }
-        turn_angle.set(ControlMode.PercentOutput, 0.2);
-
-    }
-
-    private void setWheelToAngle(WPI_TalonFX turn, WPI_CANCoder canCoder, double targetAngle) {
-        double currentClick = canCoder.getAbsolutePosition();
-        double relCurrentClick = currentClick % CANCODER_CPR;
-        double targetClick = targetAngle * (CANCODER_CPR / (2.0 * Math.PI));
-        double clickDist = targetClick - relCurrentClick;
-        if (Math.abs(clickDist) > (CANCODER_CPR / 2.0)) {
-            clickDist = CANCODER_CPR - clickDist;
-        }
-        targetClick = currentClick + clickDist;
-        turn.set(ControlMode.Position, targetClick);
+    public Vector translateToWheel(String name, Vector drive, double spin, Vector wheelLocation,
+            double wheelRotationScale) {
+        // calcuate spin vector, translated to wheel
+        Vector zv = Vector.fromPolarDegrees(-spin * wheelRotationScale,
+                wheelLocation.getAngleXYDegree() + 45.0, spin);
+        // combine drive and spin vectors
+        Vector finv = drive.addVector(zv);
+        // Determine the heading angle in degrees for FOC
+        double angle = finv.getAngleXYDegree();
+        // Update combined vector, rotated around field angle
+        SmartDashboard.putNumber("DriveSwerve/angle" + name, angle);
+        SmartDashboard.putNumber("DriveSwerve/wa" + name, wheelLocation.getAngleXYDegree());
+        return Vector.fromPolarDegrees(finv.getLengthXY(), angle, finv.getZ());
     }
 
     @Override
@@ -543,19 +305,75 @@ public class DriveSwerveImpl implements DriveSwerve {
         gyro.reset();
     }
 
+    public void zeroPosition() {
+        frCorner.zeroPosition();
+        flCorner.zeroPosition();
+        brCorner.zeroPosition();
+        blCorner.zeroPosition();
+    }
+
     @Override
     public void setSpeedMode(SPEED speed) {
+        switch (speed) {
+            //drive speeds
+            case SLOW:
+                this.speed = SPEED_SLOW;
+                frCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_SLOW_RPS);
+                flCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_SLOW_RPS);
+                brCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_SLOW_RPS);
+                blCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_SLOW_RPS);
 
+                frCorner.setMaxVoltage (SwerveModuleFalcon.DRIVE_SLOW_VOLTAGE);
+                flCorner.setMaxVoltage(SwerveModuleFalcon.DRIVE_SLOW_VOLTAGE);
+                brCorner.setMaxVoltage(SwerveModuleFalcon.DRIVE_SLOW_VOLTAGE);
+                blCorner.setMaxVoltage(SwerveModuleFalcon.DRIVE_SLOW_VOLTAGE);
+                break;
+            case FAST:
+                this.speed = SPEED_FAST;
+                frCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_FAST_RPS);
+                flCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_FAST_RPS);
+                brCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_FAST_RPS);
+                blCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_FAST_RPS);
+
+                frCorner.setMaxVoltage (SwerveModuleFalcon.DRIVE_FAST_VOLTAGE);
+                flCorner.setMaxVoltage(SwerveModuleFalcon.DRIVE_FAST_VOLTAGE);
+                brCorner.setMaxVoltage(SwerveModuleFalcon.DRIVE_FAST_VOLTAGE);
+                blCorner.setMaxVoltage(SwerveModuleFalcon.DRIVE_FAST_VOLTAGE);
+                break;
+            case MED:
+            default:
+                this.speed = SPEED_MED;
+                frCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_MED_RPS);
+                flCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_MED_RPS);
+                brCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_MED_RPS);
+                blCorner.setMaxRPS(SwerveModuleFalcon.DRIVE_MED_RPS);
+
+                frCorner.setMaxVoltage (SwerveModuleFalcon.DRIVE_MED_VOLTAGE);
+                flCorner.setMaxVoltage(SwerveModuleFalcon.DRIVE_MED_VOLTAGE);
+                brCorner.setMaxVoltage(SwerveModuleFalcon.DRIVE_MED_VOLTAGE);
+                blCorner.setMaxVoltage(SwerveModuleFalcon.DRIVE_MED_VOLTAGE);
+                break;
+        }
     }
 
     private void brake() {
-        frDrive.set(ControlMode.PercentOutput, 0);
-        frTurn.set(ControlMode.PercentOutput, 0);
-        flDrive.set(ControlMode.PercentOutput, 0);
-        flTurn.set(ControlMode.PercentOutput, 0);
-        brDrive.set(ControlMode.PercentOutput, 0);
-        brTurn.set(ControlMode.PercentOutput, 0);
-        blDrive.set(ControlMode.PercentOutput, 0);
-        blTurn.set(ControlMode.PercentOutput, 0);
+        frCorner.brake();
+        flCorner.brake();
+        brCorner.brake();
+        blCorner.brake();
+    }
+
+    public void logData() {
+        frCorner.logData();
+        flCorner.logData();
+        brCorner.logData();
+        blCorner.logData();
+    }
+
+    public void logTestData() {
+        SmartDashboard.putNumber("DriveSwerveTest/fr offset", frCorner.calcCanCoderAbsOffset());
+        SmartDashboard.putNumber("DriveSwerveTest/fl offset", flCorner.calcCanCoderAbsOffset());
+        SmartDashboard.putNumber("DriveSwerveTest/br offset", brCorner.calcCanCoderAbsOffset());
+        SmartDashboard.putNumber("DriveSwerveTest/bl offset", blCorner.calcCanCoderAbsOffset());
     }
 }

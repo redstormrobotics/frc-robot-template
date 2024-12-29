@@ -24,11 +24,14 @@
  */
 package frc.robot;
 
-import com.ctre.phoenix.motorcontrol.can.TalonFX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.Pigeon2;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.SparkMaxConfig;
 import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
 import edu.wpi.first.hal.PowerDistributionVersion;
 import edu.wpi.first.wpilibj.DataLogManager;
@@ -47,12 +50,16 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  */
 public class Robot extends TimedRobot {
 
+	public enum ROBOTNAME {
+		DEFAULT, // Empty robot
+	};
+
 	// User-Side Controls
 	private boolean runnable;
 	private String m_autoSelected;
-	private final SendableChooser<String> m_chooser = new SendableChooser<>();
-	private final SendableChooser<Boolean> m_driverWindows = new SendableChooser<>();
-	private final SendableChooser<Integer> m_healthinfo = new SendableChooser<>();
+	private final SendableChooser<String> autonChooser = new SendableChooser<>();
+	private final SendableChooser<Boolean> platformChooser = new SendableChooser<>();
+	private final SendableChooser<Integer> logLevelChooser = new SendableChooser<>();
 
 	// UI
 	private Gamepad gp0;
@@ -61,7 +68,7 @@ public class Robot extends TimedRobot {
 	// Robot Hardware Attached:
 	private Config config;
 	private Health health;
-	private DriveTrainTank driveTrain;
+	private DriveSwerve driveTrain;
 	private PowerDistribution pdu;
 
 	// Operating Modes
@@ -71,10 +78,15 @@ public class Robot extends TimedRobot {
 	private ModeSimulation modeSimulation;
 	private ModeTest modeTest;
 
+	// CAN bus names
+	private final String RIOCAN = "rio";
+	private final String DRIVECAN = "drive";
+
     // ===============================================================================================
 	/**
 	 * This function is run when the robot is first started up and should be used for any
 	 * initialization code.
+	 * All hardware ID and ports should be assigned in this file.
 	 */
 	@Override
 	public void robotInit() {
@@ -84,53 +96,59 @@ public class Robot extends TimedRobot {
 		DataLogManager.start();
 		DriverStation.startDataLog(DataLogManager.getLog(), true);
 
+		// Add the robot specific settings here
+		ROBOTNAME robotName = ROBOTNAME.DEFAULT;
+		String driveCan = RIOCAN;
+
 		// Initialize User-Side Controls
-		driverPlatformChooser.setDefaultOption("Windows", true);
-		driverPlatformChooser.addOption("Linux", false);
-		SmartDashboard.putData("Driver Platform", driverPlatformChooser);
+		platformChooser.setDefaultOption("Windows", true);
+		platformChooser.addOption("Linux", false);
+		SmartDashboard.putData("Driver Platform", platformChooser);
 
 		// Initialize Gamepads
 		gp0 = new Gamepad(0);
 		gp1 = new Gamepad(1);
 
 		// Initialize Smart Dashboard Driver Controller Platform Selection
-		m_driverWindows.setDefaultOption("Windows", true);
-		m_driverWindows.addOption("Linux", false);
-		SmartDashboard.putData("Driver Platform", m_driverWindows);
+		platformChooser.setDefaultOption("Windows", true);
+		platformChooser.addOption("Linux", false);
+		SmartDashboard.putData("Driver Platform", platformChooser);
 
 		// Initialize Health Log Level Selection
-		m_healthinfo.setDefaultOption("Info", Health.INFO);
-		m_healthinfo.addOption("Debug", Health.DEBUG);
-		m_healthinfo.addOption("Trace", Health.TRACE);
-		SmartDashboard.putData("Log Level", m_healthinfo);
+		logLevelChooser.setDefaultOption("Info", Health.INFO);
+		logLevelChooser.addOption("Debug", Health.DEBUG);
+		logLevelChooser.addOption("Trace", Health.TRACE);
+		SmartDashboard.putData("Log Level", logLevelChooser);
 
 		// Initialization of all Hardware
 		health = new Health(0);
 		config = new Config(0);
 
+		Pigeon2 gyro = null;
 		// initialize drive train
+		DriveSwerve driveSwerve;
 		try {
-			BaseMotorController driveFR = safelyCreateVictorSPX(2);
-			BaseMotorController driveBR = safelyCreateVictorSPX(4);
-			BaseMotorController driveBL = safelyCreateVictorSPX(1);
-			BaseMotorController driveFL = safelyCreateVictorSPX(3);
-			if (driveFL != null && driveFR != null) {
-				// we can create a drive train
-				BaseMotorController[] left =
-						driveBL != null ? new BaseMotorController[] {driveFL, driveBL}
-								: new BaseMotorController[] {driveFL};
-				BaseMotorController[] right =
-						driveBR != null ? new BaseMotorController[] {driveFR, driveBR}
-								: new BaseMotorController[] {driveFR};
-
-				driveTrain = new DriveTrainTankBasicController(left, right);
-			} else {
-				health.addError("Unable to find motor controllers for drive train");
-				driveTrain = new DriveTrainVirtual();
-			}
+			TalonFX driveFR = safelyCreateTalonFX(10, driveCan);
+			TalonFX driveFL = safelyCreateTalonFX(13, driveCan);
+			TalonFX driveBR = safelyCreateTalonFX(16, driveCan);
+			TalonFX driveBL = safelyCreateTalonFX(19, driveCan);
+			TalonFX turnFR = safelyCreateTalonFX(11, driveCan);
+			TalonFX turnFL = safelyCreateTalonFX(14, driveCan);
+			TalonFX turnBR = safelyCreateTalonFX(17, driveCan);
+			TalonFX turnBL = safelyCreateTalonFX(20, driveCan);
+			CANcoder CANCoderFR = safelyCreateCANCoder(12, driveCan);
+			CANcoder CANCoderFL = safelyCreateCANCoder(15, driveCan);
+			CANcoder CANCoderBR = safelyCreateCANCoder(18, driveCan);
+			CANcoder CANCoderBL = safelyCreateCANCoder(21, driveCan);
+			gyro = safelyCreateGyro(driveCan);
+			driveSwerve = new DriveSwerveImpl(driveFR, turnFR, CANCoderFR, driveFL, turnFL,
+					CANCoderFL, driveBR, turnBR, CANCoderBR, driveBL, turnBL, CANCoderBL, gyro,
+					robotName);
+			driveSwerve.init();
+			System.out.println("drivetrain online");
 		} catch (Exception e) {
 			health.addError("Drive train failed", e);
-			driveTrain = new DriveTrainVirtual();
+			driveSwerve = new DriveSwerveDummy(); // dummy method in case of error
 		}
 		// Setup Power Distrubution Hub
 		try {
@@ -165,12 +183,12 @@ public class Robot extends TimedRobot {
 		}
 
 		// Initialize UI Auton Selection
-		String auton_options[] = modeAuton.getAutons();
-		m_chooser.setDefaultOption(auton_options[0], auton_options[0]);
+		String auton_options[] = modeAuton.getAutonList();
+		autonChooser.setDefaultOption(auton_options[0], auton_options[0]);
 		for (int i = 1; i < auton_options.length; i++) {
-			m_chooser.addOption(auton_options[i], auton_options[i]);
+			autonChooser.addOption(auton_options[i], auton_options[i]);
 		}
-		SmartDashboard.putData("Auton", m_chooser);
+		SmartDashboard.putData("Auton", autonChooser);
 
 		System.out.println("robotInit() complete");
 	}
@@ -185,9 +203,9 @@ public class Robot extends TimedRobot {
 	@Override
 	public void autonomousInit() {
 		grabUiControls();		
-		m_autoSelected = m_chooser.getSelected();
+		m_autoSelected = autonChooser.getSelected();
 		System.out.println("Auto selected: " + m_autoSelected);
-		modeAuton.Initialize(runnable);
+		modeAuton.initialize(runnable);
 		modeAuton.selectAuton(m_autoSelected);
 	}
 
@@ -246,14 +264,15 @@ public class Robot extends TimedRobot {
 	// Update Selections From UI (if present)
 	protected void grabUiControls() {
 		try {
-			boolean isWindows = m_driverWindows.getSelected();
-			Gamepad.selectWindows(isWindows);
+			boolean isWindows = "Windows".equals(platformChooser.getSelected());
+			gp0.selectWindows(isWindows);
+			gp1.selectWindows(isWindows);
 		} catch (Exception e) {
 			health.addError("Could not config controls");
 		}
 
 		try {
-			int healthValue = m_healthinfo.getSelected();
+			int healthValue = logLevelChooser.getSelected();
 			Health.verbosity(healthValue);
 		} catch (Exception e) {
 			Health.verbosity(Health.INFO);
@@ -263,21 +282,26 @@ public class Robot extends TimedRobot {
     // ===============================================================================================
 
 	// Wrapper to create motors in a detectable way
-	protected TalonFX safelyCreateTalonFX(int ID, boolean inverted) {
+	protected TalonFX safelyCreateTalonFX(int ID, String canbus) {
 		try {
 			TalonFX motor = new TalonFX(ID);
-			motor.setInverted(inverted);
-			if (motor.getFirmwareVersion() > 0) {
+			if (motor.isConnected()) {
+				System.out.println("Created TalonFX with " + ID);
 				return motor;
+			} else {
+				System.out.println("Unable to connect to TalonFX with " + ID);
+				return null;
 			}
 		} catch (Exception e) {
 			// Ran into a problem. Return a null below
+			System.out.println("Failed to create TalonFX with " + ID);
 		}
 		return null;
 	}
 
+	// create Falcon motor. We use these motors a lot
 	protected TalonFX safelyCreateTalonFX(int ID) {
-		return safelyCreateTalonFX(ID, false);
+		return safelyCreateTalonFX(ID, RIOCAN);
 	}
 
 	protected VictorSPX safelyCreateVictorSPX(int ID, boolean inverted) {
@@ -285,10 +309,15 @@ public class Robot extends TimedRobot {
 			VictorSPX motor = new VictorSPX(ID);
 			motor.setInverted(inverted);
 			if (motor.getFirmwareVersion() > 0) {
+				System.out.println("Created VictorSPX with " + ID);
 				return motor;
+			} else {
+				System.out.println("Unable to connect to VictorSPX with " + ID);
+				return null;
 			}
 		} catch (Exception e) {
 			// Ran into a problem. Return a null below
+			System.out.println("Failed to create VictorSPX with " + ID);
 		}
 		return null;
 	}
@@ -302,10 +331,15 @@ public class Robot extends TimedRobot {
 			TalonSRX motor = new TalonSRX(ID);
 			motor.setInverted(inverted);
 			if (motor.getFirmwareVersion() > 0) {
+				System.out.println("Created TalonSRX with " + ID);
 				return motor;
+			} else {
+				System.out.println("Unable to connect to TalonSRX with " + ID);
+				return null;
 			}
 		} catch (Exception e) {
 			// Ran into a problem. Return a null below
+			System.out.println("Failed to create TalonSRX with " + ID);
 		}
 		return null;
 	}
@@ -314,19 +348,85 @@ public class Robot extends TimedRobot {
 		return safelyCreateTalonSRX(ID, false);
 	}
 
-	protected CANSparkMax safelyCreateSparkMax(int ID) throws Exception {
-		CANSparkMax motor = null;
-		for (int tries = 0; tries < 3; tries++) {
+	// create Spark Max. Brushless NEO550
+	protected SparkMax safelyCreateSparkMaxBrushless(int ID) throws Exception {
+		SparkMax motor = null;
+		for (int tries = 0; tries < 3; tries++) { // trying 3 times
 			if (motor == null) {
-				motor = new CANSparkMax(ID, MotorType.kBrushless);
+				motor = new SparkMax(ID, MotorType.kBrushless); // assigned motor as brushless
 			}
 
-			if (motor.getFirmwareVersion() > 0) {
+			if (motor.getFirmwareVersion() > 0) { // if it has firmware, proceed
 				return motor;
 			}
-			Timer.delay(0.05);
+			Timer.delay(0.05); // delay between tries
 		}
-		throw new Exception("SparkMax " + String.valueOf(ID) + " Not Found");
+		return null;
+	}
+
+	// create Spark Max. Brushed
+	protected SparkMax safelyCreateSparkMaxBrushed(int ID) throws Exception {
+		SparkMax motor = null;
+		try {
+			for (int tries = 0; tries < 3; tries++) { // trying 3 times
+				if (motor == null) {
+					motor = new SparkMax(ID, MotorType.kBrushed); // assigning motor as brushed
+				}
+
+				if (motor.getFirmwareVersion() > 0) { // if it has firmware, proceed
+					return motor;
+				}
+				Timer.delay(0.05); // delay between tries
+			}
+		} catch (Throwable t) {
+			System.out.println("unable to create spark max with id 40");
+		}
+		return null;
+	}
+
+
+	protected CANcoder safelyCreateCANCoder(int ID) {
+		return safelyCreateCANCoder(ID, RIOCAN);
+	}
+
+	protected CANcoder safelyCreateCANCoder(int ID, String canbus) {
+		try {
+			CANcoder encoder = new CANcoder(ID, canbus);
+			if (encoder.isConnected()) {
+				System.out.println("Created CANCoder for ID " + ID);
+				return encoder;
+			} else {
+				System.out.println("Unable to connect to CANCoder " + ID);
+				return null;
+			}
+		} catch (Exception e) {
+			// Ran into a problem. Return a null below
+			System.out.println("Failed to create CANCoder " + ID);
+		}
+		return null;
+	}
+
+	protected Pigeon2 safelyCreateGyro() {
+		return safelyCreateGyro(RIOCAN);
+	}
+
+	// creating gyro
+	protected Pigeon2 safelyCreateGyro(String canbus) {
+		try {
+			Pigeon2 gyro = new Pigeon2(2, canbus);
+			if(gyro.isConnected())
+			{
+				System.out.println("Created Pigeon2 gyro");
+				return gyro;
+			} else {
+				System.out.println("Failed to connect to Pigeon2 gyro");
+				return null;
+			}
+		} catch (Exception e) {
+			// Ran into a problem. Return a null below
+			System.out.println("Failed to create Pigeon2 gyro");
+		}
+		return null;
 	}
 
 }

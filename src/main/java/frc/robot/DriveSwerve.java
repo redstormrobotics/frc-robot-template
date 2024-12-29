@@ -4,9 +4,10 @@ public interface DriveSwerve
 {
     public enum MODE{
         DRIVE,
-        POSITIONDRIVE,
-        BRAKE
-
+        BRAKE,
+        DRIVEPERCENT,
+        DRIVETOPOSITION,
+        DRIVECONTINUE
     }
 
     public enum SPEED{
@@ -26,7 +27,11 @@ public interface DriveSwerve
 
     public void enable();
 
-    public void drive( MODE mode, Vector drive, Vector spin);
+    public void turnOff();
+
+    public void drive( MODE mode, Vector drive, double spin);
+
+    public void resetGyroHeading();
 
     // Sum of all drive train motors (goofy ahh unit)
     public double getTotalDriveCurrent();
@@ -35,14 +40,26 @@ public interface DriveSwerve
 
     public double getAngleEncoderCount(WHEEL_ID wheelID);
 
-    public double getWheelRPM(WHEEL_ID wheelID);
+    public double getWheelRPS(WHEEL_ID wheelID);
 
     // In Radians
     public double getWheelAngle(WHEEL_ID wheelID);
 
+    public double getMaxWheelError();
+    
+    public boolean isAtPosition();
+
+    public double gyroAngle();
+
+    public double robotAngle();
+
     public void resetGyro();
+
+    public void zeroPosition();
 
     public void setSpeedMode(SPEED speed);
 
+    public void logData();
 
+    public void logTestData();
 }

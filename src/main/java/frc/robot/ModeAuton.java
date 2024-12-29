@@ -24,23 +24,27 @@
  */
 package frc.robot;
 
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.auton.*;
 
 public class ModeAuton extends Mode {
 
-    private final Timer autonTimer;
-    private final DriveTrainTank driveTrain;
-    private final AutonMode[] autonList;
-    private AutonMode autonSelected;
+    private final Auton[] autonList;
+    private Auton autonSelected;
     private final SendableChooser<String> autoChooser;
+    
+    private int lastStep;
+    private int currStep;
+    private Step[] currSteps;
 
-    public ModeAuton(Config config, DriveTrainTank driveTrain) {
+    public ModeAuton(Config config, DriveSwerve driveTrain) {
         super(config);
-        this.autonTimer = new Timer();
-        this.driveTrain = driveTrain;
-        this.autonList = new AutonMode[] {new AutoModeNothing(), new AutoModeBackup()};
+        // Add new auton modes here
+        this.autonList = new Auton[] {
+            new AutonEmpty(),
+            new AutonBackup(driveTrain),
+        };
         this.autonSelected = this.autonList[0];
         this.autoChooser = new SendableChooser<>();
         for (int i = 0; i < autonList.length; i++) {
@@ -48,11 +52,16 @@ public class ModeAuton extends Mode {
         }
         this.autoChooser.setDefaultOption(autonList[0].getName(), autonList[0].getName());
         SmartDashboard.putData("Auton", this.autoChooser);
+
+        currSteps = new Step[0];
+        lastStep = -1;
+        currStep = 0;
     }
 
     protected boolean init() {
-        autonTimer.reset();
-        autonTimer.start();
+        currSteps = autonSelected.getSteps();
+        lastStep = -1;
+        currStep = 0;
         return selectAuton(autoChooser.getSelected());
     }
 
@@ -69,64 +78,29 @@ public class ModeAuton extends Mode {
             if (autonList[i].getName().equals(mode)) {
                 autonSelected = autonList[i];
                 Health.warning("AutonMode", autonSelected.getName());
+                currSteps = autonSelected.getSteps();
+                currStep = 0;
                 return true;
             }
         }
         autonSelected = autonList[0];
+        currSteps = autonSelected.getSteps();
+        currStep = 0;
         Health.warning("AutonMode", autonSelected.getName() + " (Defaulted)");
         return false;
     }
 
     protected void loop() {
-        // Run Valid Auton Modes by Name
-        if (autonSelected != null) {
-            autonSelected.Loop();
-        } else {
-            done();
-        }
-    }
-
-    private void done() {
-
-    }
-
-    public interface AutonMode {
-        public String getName();
-
-        public void Loop();
-    }
-
-    // ===============================================================================================
-    // Add Modes Below
-    // ===============================================================================================
-
-    public class AutoModeNothing implements AutonMode {
-        public String getName() {
-            return "Nothing";
-        }
-
-        public void Loop() {
-            if (autonTimer.get() > 3.0) {
-                done();
+        if(currStep < currSteps.length) {
+            if(currSteps[currStep].isDone()) {
+                currStep++;
             }
         }
-    }
-
-
-    public class AutoModeBackup implements AutonMode {
-        public String getName() {
-            return "Backup";
-        }
-
-        public void Loop() {
-            if (autonTimer.get() < 1.0) {
-                Health.warning("AutonStatus", "Drive backwards");
-                driveTrain.drive(-0.2, 0.0);
-            } else {
-                Health.warning("AutonStatus", "Stop");
-                driveTrain.drive(0.0, 0.0);
-                done();
-            }
+        if(lastStep < currStep) {
+            currSteps[currStep].enterStep();
+            lastStep = currStep;
         }
     }
+
+
 }
