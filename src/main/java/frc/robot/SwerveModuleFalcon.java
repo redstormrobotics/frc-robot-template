@@ -1,6 +1,11 @@
 package frc.robot;
 
 import java.util.HashMap;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.ctre.phoenix.motorcontrol.Faults;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.RemoteSensorSource;
@@ -8,6 +13,7 @@ import com.ctre.phoenix.sensors.AbsoluteSensorRange;
 import com.ctre.phoenix.sensors.CANCoderConfiguration;
 import com.ctre.phoenix.sensors.SensorInitializationStrategy;
 import com.ctre.phoenix6.StatusCode;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -22,10 +28,8 @@ import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.hardware.CANcoder;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.DriveSwerve.MODE;
 import frc.robot.DriveSwerve.WHEEL_ID;
-import java.util.HashMap;
 
 
 public class SwerveModuleFalcon {
@@ -38,8 +42,15 @@ public class SwerveModuleFalcon {
     static public final double DRIVE_MED_VOLTAGE = 7.0;
     static public final double DRIVE_FAST_VOLTAGE = 12.0;
 
-    private final boolean useCanCoder = true;
+    private static final double TURN_MOTOR_GEAR_RATIO = 7.0;
+    private static final double DRIVE_MOTOR_GEAR_RATIO_L1 = 8.14;
+    private static final double DRIVE_MOTOR_GEAR_RATIO_L2 = 6.75;
+    private static final double DRIVE_MOTOR_GEAR_RATIO_L3 = 6.12;
 
+    static private final double WHEEL_DIAM_INCH = 4.0 * Math.PI;
+    static private final double WHEEL_DIAM_METER = Units.inchesToMeters(WHEEL_DIAM_INCH);
+
+    private final boolean useCanCoder = true;
 
     private final String name;
     private final TalonFX driveMotor;
@@ -56,6 +67,9 @@ public class SwerveModuleFalcon {
     private final PositionVoltage turnRequest = new PositionVoltage(0.0).withSlot(0).withUpdateFreqHz(50.0);
     private final VoltageOut driveVoltageRequest = new VoltageOut(0.0).withUpdateFreqHz(50.0);
     private final MotionMagicVoltage drivePosRequest = new MotionMagicVoltage(0.0).withSlot(1).withUpdateFreqHz(50.0);
+
+    private final StatusSignal<Angle> drivePosition;
+    private final StatusSignal<Angle> turnPosition;
 
     private final String sdDriveTargetRPSKey;
     private final String sdDriveMaxRPSKey;
@@ -94,11 +108,6 @@ public class SwerveModuleFalcon {
     private final String sdCanCoderVelKey;
     private final String sdCanCoderMagneticKey;
 
-    private static final double TURN_MOTOR_GEAR_RATIO = 7.0;
-    private static final double DRIVE_MOTOR_GEAR_RATIO_L1 = 8.14;
-    private static final double DRIVE_MOTOR_GEAR_RATIO_L2 = 6.75;
-    private static final double DRIVE_MOTOR_GEAR_RATIO_L3 = 6.12;
-
     private double maxVoltage = 6.0;
     private double maxRPS = 10.0;
     private double targetSpeed = 0.0;
@@ -108,19 +117,20 @@ public class SwerveModuleFalcon {
     private double targetAngleRadians = 0.0;
     private double targetAngleError = 0.0;
     private double targetDrivePosition = 0.0;
+    private double startingDrivePosition = 0.0;
+    private boolean recordedStart = false;
     private boolean running = false;
     private boolean usingCurves = false;
+    private boolean driveReversed = false;
 
     public SwerveModuleFalcon(String name, TalonFX driveMotor, TalonFX turnMotor, CANcoder canCoder,
             double cornerOffsetRotations, Robot.ROBOTNAME robotName) {
         this.name = name;
         if (driveMotor == null) {
-            throw new RuntimeException(
-                    "Unable to setup FalconSwerveModule" + name + " driveMotor is null");
+            throw new RuntimeException("Unable to setup FalconSwerveModule" + name + " driveMotor is null");
         }
         if (turnMotor == null) {
-            throw new RuntimeException(
-                    "Unable to setup FalconSwerveModule" + name + " turnMotor is null");
+            throw new RuntimeException("Unable to setup FalconSwerveModule" + name + " turnMotor is null");
         }
         this.driveMotor = driveMotor;
         this.turnMotor = turnMotor;
@@ -202,8 +212,8 @@ public class SwerveModuleFalcon {
 
         driveConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         driveConfig.MotionMagic.MotionMagicCruiseVelocity = 10;
-        driveConfig.MotionMagic.MotionMagicAcceleration = 25;
-        driveConfig.MotionMagic.MotionMagicJerk = 200;
+        driveConfig.MotionMagic.MotionMagicAcceleration = 20;
+        driveConfig.MotionMagic.MotionMagicJerk = 50;
 
         turnConfig = new TalonFXConfiguration();
         turnConfig.FutureProofConfigs = true;
@@ -286,9 +296,10 @@ public class SwerveModuleFalcon {
         canCoderConfig = new CANcoderConfiguration();
         canCoderConfig.FutureProofConfigs = true;
         canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
-        //canCoderConfig.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue.Unsigned_0To1;
-        canCoderConfig.MagnetSensor.MagnetOffset =
-                0.0 - this.canCoderAbsOffset - this.cornerOffsetRotations;
+
+        drivePosition = driveMotor.getPosition();
+        turnPosition = turnMotor.getPosition();
+
         System.out.println("FalconSwerve " + name + " set canCoder offset "
                 + canCoderConfig.MagnetSensor.MagnetOffset + " from magent offset "
                 + this.canCoderAbsOffset + " and corner offset " + this.cornerOffsetRotations);
@@ -332,19 +343,11 @@ public class SwerveModuleFalcon {
 
     // Return the magentic offset to use to point straight (corner agnostic)
     public double calcCanCoderAbsOffset() {
-        double currentAbsPos = canCoder.getAbsolutePosition().waitForUpdate(2.0).getValueAsDouble();
-        return currentAbsPos + this.canCoderAbsOffset;
+        return turnPosition.waitForUpdate(2.0).getValue().baseUnitMagnitude() + this.canCoderAbsOffset;
     }
 
     public void zeroPosition() {
-        double currentRelPosition = turnMotor.getPosition().getValueAsDouble();
-        // if using the internal encoder, we should set the position of the internal encoder to the
-        // cancoder
-        if (!useCanCoder) {
-            System.out.println(name + " turn zero offset was " + currentRelPosition
-                    + " updating to " + canCoder.getPosition().getValue());
-            turnMotor.setPosition(canCoder.getPosition().waitForUpdate(1.0, true).getValue());
-        }
+        double currentRelPosition = turnPosition.waitForUpdate(2.0).getValue().baseUnitMagnitude();
     }
 
     public void setMaxRPS(double RPS) {
@@ -382,25 +385,30 @@ public class SwerveModuleFalcon {
 
     public void setTargetPosition(Vector target) {
         driveMotor.setControl(drivePosRequest.withPosition(driveMotor.getPosition().getValue()));
-        targetDrivePosition =
-                driveMotor.getPosition().waitForUpdate(2.0).getValueAsDouble() + target.getLengthXY() / (4 * Math.PI);
+        targetDrivePosition = target.getLengthXY() / WHEEL_DIAM_INCH;
         targetAngleRadians = target.getAngleXYRadian();
         System.out.println(name + " target pos:" + targetDrivePosition + " at "
                 + driveMotor.getPosition().getValue() + " from target " + target.getLengthXY() + " "
                 + target.getAngleXYRadian());
+        recordedStart = false;
     }
 
     public boolean applyPosition() {
         boolean areWeThereYet = false;
-        if (Math.abs(driveErrorScale) > 0.95) {
-            if (Math.abs(driveMotor.getPosition().getValueAsDouble() - targetDrivePosition) < 0.125) {
+        double targetPosition = startingDrivePosition + (driveReversed ? -targetDrivePosition : targetDrivePosition);
+        if (Math.abs(driveErrorScale) > 0.995) {
+            if (!recordedStart) {
+                startingDrivePosition = driveMotor.getPosition().waitForUpdate(2.0).getValueAsDouble();
+                recordedStart = true;
+            }
+            if (Math.abs(driveMotor.getPosition().getValueAsDouble() - targetPosition) < 0.25) {
                 System.out.println(name + " at target pos " );
                 areWeThereYet = true;
                 driveMotor.setControl(
                         drivePosRequest.withPosition(driveMotor.getPosition().getValue()));
             } else {
-                driveMotor.setControl(drivePosRequest.withPosition(targetDrivePosition));
-                System.out.println(name + " going to  " + targetDrivePosition);
+                driveMotor.setControl(drivePosRequest.withPosition(targetPosition));
+                System.out.println(name + " going to  " + targetPosition);
 
             }
         } else { 
@@ -532,16 +540,20 @@ public class SwerveModuleFalcon {
             double idealRadErr = Math.abs(canPositionRadians - idealRadians);
             if (targetRadErr < idealRadErr) {
                 if (nonoptimal && targetRadErr > Math.PI / 2.0) {
+                    driveReversed = true;
                     targetAngleRadians = idealRadians + (shouldSpinPos ? Math.PI : -Math.PI);
                     targetPower = -targetPower;
                 } else {
                     targetAngleRadians = targetRadians;
+                    driveReversed = false;
                 }
             } else {
                 if (nonoptimal && idealRadErr > Math.PI / 2.0) {
+                    driveReversed = true;
                     targetAngleRadians = targetRadians - (shouldSpinPos ? Math.PI : -Math.PI);
                     targetPower = -targetPower;
                 } else {
+                    driveReversed = false;
                     targetAngleRadians = idealRadians;
                 }
             }
@@ -588,6 +600,13 @@ public class SwerveModuleFalcon {
         }
     }
 
+    public SwerveModulePosition getPosition() {
+        return new SwerveModulePosition(
+            driveMotor.getPosition().getValueAsDouble()*WHEEL_DIAM_METER,
+            new Rotation2d(getWheelAngleRadians())
+        );
+    }
+
     public void logData() {
         SmartDashboard.putNumber("DriveSwerve/driveRPS", driveRPS);
 
@@ -601,11 +620,9 @@ public class SwerveModuleFalcon {
         SmartDashboard.putNumber(sdDriveSupplyCurKey, driveMotor.getSupplyCurrent().getValueAsDouble());
         SmartDashboard.putNumber(sdDriveCLErrorKey, driveMotor.getClosedLoopError().getValue());
         SmartDashboard.putNumber(sdDriveSensorPosKey, driveMotor.getPosition().getValueAsDouble());
-        SmartDashboard.putNumber(sdDriveSensorMotorVoltageKey,
-                driveMotor.getMotorVoltage().getValueAsDouble());
+        SmartDashboard.putNumber(sdDriveSensorMotorVoltageKey, driveMotor.getMotorVoltage().getValueAsDouble());
 
-        SmartDashboard.putNumber(sdDriveIntAccumKey,
-                driveMotor.getClosedLoopIntegratedOutput().getValue());
+        SmartDashboard.putNumber(sdDriveIntAccumKey, driveMotor.getClosedLoopIntegratedOutput().getValue());
         SmartDashboard.putNumber(sdDriveSensorVelKey, driveMotor.getVelocity().getValueAsDouble());
         SmartDashboard.putNumber(sdDriveErrorDerivKey, driveMotor.getClosedLoopError().getValue());
         SmartDashboard.putBoolean(sTurnFaultsKey, driveMotor.getFaultField().getValue() == 0);
@@ -617,10 +634,8 @@ public class SwerveModuleFalcon {
         SmartDashboard.putNumber(sdTurnSupplyCurKey, turnMotor.getSupplyCurrent().getValueAsDouble());
         SmartDashboard.putNumber(sdTurnCLErrorKey, turnMotor.getClosedLoopError().getValue());
         SmartDashboard.putNumber(sdTurnSensorPosKey, turnMotor.getPosition().getValueAsDouble());
-        SmartDashboard.putNumber(sdTurnAdjustSensorPosKey,
-                turnMotor.getPosition().getValueAsDouble() + canCoderRelOffset);
-        SmartDashboard.putNumber(sdTurnIntAccumKey,
-                turnMotor.getClosedLoopIntegratedOutput().getValue());
+        SmartDashboard.putNumber(sdTurnAdjustSensorPosKey, turnMotor.getPosition().getValueAsDouble() + canCoderRelOffset);
+        SmartDashboard.putNumber(sdTurnIntAccumKey, turnMotor.getClosedLoopIntegratedOutput().getValue());
         SmartDashboard.putNumber(sdTurnErrorDerivKey, turnMotor.getClosedLoopError().getValue());
         SmartDashboard.putNumber(sdTargetAngleRadians, targetAngleRadians);
         SmartDashboard.putNumber(sdTargetAngleError, targetAngleError);

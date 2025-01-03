@@ -30,6 +30,14 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 
 public class DriveSwerveImpl implements DriveSwerve {
 
@@ -39,6 +47,12 @@ public class DriveSwerveImpl implements DriveSwerve {
     private SwerveModuleFalcon blCorner;
     private final Pigeon2 gyro; // id 2
     private double gyroOffset = 0.0;
+
+    private SwerveDriveKinematics kinematics;
+    private SwerveDriveOdometry odomtery;
+    private Pose2d pose;
+    private final String sdPose;
+    private final Field2d field;
 
     private double CC_BR;
     private double CC_BL;
@@ -89,6 +103,36 @@ public class DriveSwerveImpl implements DriveSwerve {
         flCorner = new SwerveModuleFalcon("fl", flDrive, flTurn, flCANCoder,
                 flLocation.getAngleXYDegree() / 360.0, robotName);
         gyro.reset();
+        try {
+            kinematics = new SwerveDriveKinematics(
+                flLocation.toTranslation2d(),
+                frLocation.toTranslation2d(),
+                blLocation.toTranslation2d(),
+                brLocation.toTranslation2d()
+            );
+            try {
+                odomtery = new SwerveDriveOdometry(kinematics, new Rotation2d(0),
+                    new SwerveModulePosition[] {
+                        new SwerveModulePosition(flLocation.getLengthXY(), new Rotation2d(flLocation.getAngleXYRadian())),
+                        new SwerveModulePosition(frLocation.getLengthXY(), new Rotation2d(frLocation.getAngleXYRadian())),
+                        new SwerveModulePosition(blLocation.getLengthXY(), new Rotation2d(blLocation.getAngleXYRadian())),
+                        new SwerveModulePosition(brLocation.getLengthXY(), new Rotation2d(brLocation.getAngleXYRadian()))
+                    }
+                );
+                pose = odomtery.getPoseMeters();
+            } catch(Exception e) {
+                Health.getHealth().addError("Odometry failed", e);
+                odomtery = null;
+                pose = null;
+            }
+        } catch(Exception e) {
+            Health.getHealth().addError("Kinematics failed", e);
+            kinematics = null;
+            odomtery = null;
+        }
+        sdPose = "DriveSwerve/pose";
+        field = new Field2d();
+        SmartDashboard.putData("Field", field);
     }
 
     public void init() {
@@ -110,7 +154,7 @@ public class DriveSwerveImpl implements DriveSwerve {
         blCorner.turnOff();
     }
     public void resetGyroHeading() {
-        gyroOffset = +gyro.getYaw().getValueAsDouble() - 45.0;
+        gyroOffset =+ gyro.getYaw().getValueAsDouble() - 45.0;
     }
 
     public void drive(MODE mode, Vector drive, double spin) {
@@ -361,6 +405,21 @@ public class DriveSwerveImpl implements DriveSwerve {
         flCorner.brake();
         brCorner.brake();
         blCorner.brake();
+    }
+
+    public void updatePose() {
+        if(odomtery != null) {
+            pose = odomtery.update(
+                new Rotation2d(Math.toRadians(robotAngle())),
+                new SwerveModulePosition[]{
+                    flCorner.getPosition(),
+                    frCorner.getPosition(),
+                    blCorner.getPosition(),
+                    brCorner.getPosition(),
+                }
+            );
+            field.setRobotPose(pose);
+        }
     }
 
     public void logData() {

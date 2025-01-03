@@ -56,6 +56,8 @@ public void turnOff() {
         
     }
 
+    public void updatePose(){}
+
     public void logData(){}
 
     public void logTestData(){}

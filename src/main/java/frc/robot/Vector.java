@@ -1,5 +1,9 @@
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
+
 public class Vector {
     private double x;
     private double y;
@@ -132,4 +136,10 @@ public class Vector {
         cartXY = true;
     }
 
+    public Transform2d toTransform2d(Rotation2d rotation) {
+        return new Transform2d(x, y, rotation);
+    }
+    public Translation2d toTranslation2d() {
+        return new Translation2d(x, y);
+    }
 }

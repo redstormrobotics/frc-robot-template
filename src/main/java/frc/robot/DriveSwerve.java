@@ -59,6 +59,8 @@ public interface DriveSwerve
 
     public void setSpeedMode(SPEED speed);
 
+    public void updatePose();
+
     public void logData();
 
     public void logTestData();
