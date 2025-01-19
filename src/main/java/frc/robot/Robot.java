@@ -68,7 +68,7 @@ public class Robot extends TimedRobot {
 	// Robot Hardware Attached:
 	private Config config;
 	private Health health;
-	private DriveSwerve driveTrain;
+	private DriveSwerve driveSwerve;
 	private PowerDistribution pdu;
 
 	// Operating Modes
@@ -171,10 +171,10 @@ public class Robot extends TimedRobot {
 
 		// Initialization of all Modes
 		try {
-			modeAuton = new ModeAuton(config, driveTrain);
-			modeTeleOp = new ModeTeleOp(config, gp0, gp1, driveTrain);
+			modeAuton = new ModeAuton(config, driveSwerve);
+			modeTeleOp = new ModeTeleOp(config, gp0, gp1, driveSwerve);
 			modeSimulation = new ModeSimulation(config);
-			modeTest = new ModeTest(config);
+			modeTest = new ModeTest(config, driveSwerve);
 			modeDisabled = new ModeDisabled(config);
 			runnable = true;
 		} catch (Exception e) {

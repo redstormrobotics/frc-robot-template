@@ -60,10 +60,10 @@ public class DriveSwerveImpl implements DriveSwerve {
     private double CC_FL;
 
 
-    final private Vector frLocation = Vector.fromPolarDegrees(15.39, 90.0 + 39.52, 0.0);
-    final private Vector brLocation = Vector.fromPolarDegrees(15.39, 180.0 + 42.37, 0.0);
-    final private Vector blLocation = Vector.fromPolarDegrees(15.39, 270.0 + 42.37, 0.0);
-    final private Vector flLocation = Vector.fromPolarDegrees(15.39, 90.0 - 39.52, 0.0);
+    final private Vector frLocation = Vector.fromPolarDegrees(16.0, 90.0 + 45.0, 0.0);
+    final private Vector brLocation = Vector.fromPolarDegrees(16.0, 180.0 + 45.0, 0.0);
+    final private Vector blLocation = Vector.fromPolarDegrees(16.0, 270.0 + 45.0, 0.0);
+    final private Vector flLocation = Vector.fromPolarDegrees(16.0, 90.0 - 45.0, 0.0);
     // get furthest distance
     final private double maxWheelDist =
             Math.max(Math.max(frLocation.getLengthXY(), flLocation.getLengthXY()),
@@ -140,6 +140,14 @@ public class DriveSwerveImpl implements DriveSwerve {
         flCorner.init();
         brCorner.init();
         blCorner.init();
+        resetGyroHeading();
+    }
+
+    public void initTestMode() {
+        frCorner.initTestMode();
+        flCorner.initTestMode();
+        brCorner.initTestMode();
+        blCorner.initTestMode();
         resetGyroHeading();
     }
 
@@ -349,13 +357,6 @@ public class DriveSwerveImpl implements DriveSwerve {
         gyro.reset();
     }
 
-    public void zeroPosition() {
-        frCorner.zeroPosition();
-        flCorner.zeroPosition();
-        brCorner.zeroPosition();
-        blCorner.zeroPosition();
-    }
-
     @Override
     public void setSpeedMode(SPEED speed) {
         switch (speed) {
@@ -430,9 +431,9 @@ public class DriveSwerveImpl implements DriveSwerve {
     }
 
     public void logTestData() {
-        SmartDashboard.putNumber("DriveSwerveTest/fr offset", frCorner.calcCanCoderAbsOffset());
-        SmartDashboard.putNumber("DriveSwerveTest/fl offset", flCorner.calcCanCoderAbsOffset());
-        SmartDashboard.putNumber("DriveSwerveTest/br offset", brCorner.calcCanCoderAbsOffset());
-        SmartDashboard.putNumber("DriveSwerveTest/bl offset", blCorner.calcCanCoderAbsOffset());
+        SmartDashboard.putNumber("DriveSwerveTest/fr raw", frCorner.getCancoderAngle());
+        SmartDashboard.putNumber("DriveSwerveTest/fl raw", flCorner.getCancoderAngle());
+        SmartDashboard.putNumber("DriveSwerveTest/br raw", brCorner.getCancoderAngle());
+        SmartDashboard.putNumber("DriveSwerveTest/bl raw", blCorner.getCancoderAngle());
     }
 }

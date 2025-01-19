@@ -120,17 +120,16 @@ public class SwerveModuleFalcon {
     private double startingDrivePosition = 0.0;
     private boolean recordedStart = false;
     private boolean running = false;
-    private boolean usingCurves = false;
     private boolean driveReversed = false;
 
     public SwerveModuleFalcon(String name, TalonFX driveMotor, TalonFX turnMotor, CANcoder canCoder,
             double cornerOffsetRotations, Robot.ROBOTNAME robotName) {
         this.name = name;
         if (driveMotor == null) {
-            throw new RuntimeException("Unable to setup FalconSwerveModule" + name + " driveMotor is null");
+            throw new RuntimeException("Unable to setup SwerveModuleFalcon" + name + " driveMotor is null");
         }
         if (turnMotor == null) {
-            throw new RuntimeException("Unable to setup FalconSwerveModule" + name + " turnMotor is null");
+            throw new RuntimeException("Unable to setup SwerveModuleFalcon" + name + " turnMotor is null");
         }
         this.driveMotor = driveMotor;
         this.turnMotor = turnMotor;
@@ -269,12 +268,11 @@ public class SwerveModuleFalcon {
         HashMap<String, Double> canCoderOffsets = new HashMap<String, Double>();
         switch (robotName) {
             case DEFAULT:
-                canCoderOffsets.put("bl", 0.6597 + 0.75 / 2.0);
-                canCoderOffsets.put("br", 0.4745 + 0.75 / 2.0);
-                canCoderOffsets.put("fl", 1.3612 + 0.75 / 2.0);
-                canCoderOffsets.put("fr", 0.2 + 0.75 / 2.0);
+                canCoderOffsets.put("bl", 0.4111 + 0.75 / 2.0);
+                canCoderOffsets.put("br", -4.6483 + 0.75 / 2.0);
+                canCoderOffsets.put("fl", -2.1448 + 0.75 / 2.0);
+                canCoderOffsets.put("fr", -4.8636+ 0.75 / 2.0);
                 break;
-
             default:
                 break;
         }
@@ -296,6 +294,7 @@ public class SwerveModuleFalcon {
         canCoderConfig = new CANcoderConfiguration();
         canCoderConfig.FutureProofConfigs = true;
         canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
+        canCoderConfig.MagnetSensor.MagnetOffset = 0.0;
 
         drivePosition = driveMotor.getPosition();
         turnPosition = turnMotor.getPosition();
@@ -306,48 +305,18 @@ public class SwerveModuleFalcon {
     }
 
     public void init() {
-        updateSettings();
-        /* Retry config apply up to 5 times, report if failure */
-        StatusCode status = StatusCode.StatusCodeNotInitialized;
-        for (int i = 0; i < 5; ++i) {
-            status = driveMotor.getConfigurator().apply(driveConfig);
-            if (status.isOK())
-                break;
-        }
-        if (!status.isOK()) {
-            System.out.println(
-                    name + " could not apply DRIVE configs, error code: " + status.toString());
-        }
-        status = StatusCode.StatusCodeNotInitialized;
-        for (int i = 0; i < 5; ++i) {
-            status = turnMotor.getConfigurator().apply(turnConfig);
-            if (status.isOK())
-                break;
-        }
-        if (!status.isOK()) {
-            System.out.println(
-                    name + " could not apply TURN configs, error code: " + status.toString());
-        }
-        status = StatusCode.StatusCodeNotInitialized;
-        for (int i = 0; i < 5; ++i) {
-            status = canCoder.getConfigurator().apply(canCoderConfig);
-            if (status.isOK())
-                break;
-        }
-        if (!status.isOK()) {
-            System.out.println(
-                    name + " could not apply canCoder configs, error code: " + status.toString());
-        }
-        zeroPosition();
+        canCoderConfig.MagnetSensor.MagnetOffset = 0.0 - this.canCoderAbsOffset - this.cornerOffsetRotations;
+        applySettings();
+    }
+
+    public void initTestMode() {
+        canCoderConfig.MagnetSensor.MagnetOffset = 0.0;
+        applySettings();
     }
 
     // Return the magentic offset to use to point straight (corner agnostic)
-    public double calcCanCoderAbsOffset() {
-        return turnPosition.waitForUpdate(2.0).getValue().baseUnitMagnitude() + this.canCoderAbsOffset;
-    }
-
-    public void zeroPosition() {
-        double currentRelPosition = turnPosition.waitForUpdate(2.0).getValue().baseUnitMagnitude();
+    public double getCancoderAngle() {
+        return turnPosition.waitForUpdate(2.0).getValue().baseUnitMagnitude();
     }
 
     public void setMaxRPS(double RPS) {
@@ -374,8 +343,8 @@ public class SwerveModuleFalcon {
     public void turnOff() {
         running = false;
         setTargetSpeed(0.0);
-        driveMotor.setControl(driveRequest.withVelocity(0.0));
-        turnMotor.setControl(driveRequest.withVelocity(0.0));
+        driveMotor.stopMotor();
+        turnMotor.stopMotor();
     }
 
     public void turnOn() {
@@ -578,7 +547,7 @@ public class SwerveModuleFalcon {
         turnMotor.setControl(turnRequest.withPosition(0.0));
     }
 
-    public void updateSettings() {
+    public void applySettings() {
         /* Retry config apply up to 5 times, report if failure */
         StatusCode status = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < 5; ++i) {
@@ -587,7 +556,7 @@ public class SwerveModuleFalcon {
                 break;
         }
         if (!status.isOK()) {
-            System.out.println("Could not apply configs, error code: " + status.toString());
+            System.out.println(name + " could not apply configs drive, error code: " + status.toString());
         }
         status = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < 5; ++i) {
@@ -596,7 +565,16 @@ public class SwerveModuleFalcon {
                 break;
         }
         if (!status.isOK()) {
-            System.out.println("Could not apply configs, error code: " + status.toString());
+            System.out.println(name + " could not apply configs turn, error code: " + status.toString());
+        }
+        status = StatusCode.StatusCodeNotInitialized;
+        for (int i = 0; i < 5; ++i) {
+            status = canCoder.getConfigurator().apply(canCoderConfig);
+            if (status.isOK())
+                break;
+        }
+        if (!status.isOK()) {
+            System.out.println(name + " could not apply configs sensor, error code: " + status.toString());
         }
     }
 

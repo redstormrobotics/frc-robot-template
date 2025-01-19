@@ -26,13 +26,29 @@ package frc.robot;
 
 public class ModeTest extends Mode {
 
-    public ModeTest(Config config) {
+    private DriveSwerve driveSwerve;
+
+    public ModeTest(Config config, DriveSwerve driveSwerve) {
         super(config);
+        this.driveSwerve = driveSwerve;
     }
 
     protected boolean init() {
+        if(driveSwerve != null) {
+            driveSwerve.initTestMode();
+        }
         return true;
     }
 
-    protected void loop() {}
+    protected void loop() {
+        if(driveSwerve != null) {
+            driveSwerve.turnOff();
+        }
+    }
+
+    public void periodic() {
+        if(driveSwerve != null) {
+            driveSwerve.logTestData();
+        }
+    }
 }

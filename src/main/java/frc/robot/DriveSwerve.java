@@ -25,6 +25,8 @@ public interface DriveSwerve
 
     public void init();
 
+    public void initTestMode();
+
     public void enable();
 
     public void turnOff();
@@ -54,8 +56,6 @@ public interface DriveSwerve
     public double robotAngle();
 
     public void resetGyro();
-
-    public void zeroPosition();
 
     public void setSpeedMode(SPEED speed);
 
