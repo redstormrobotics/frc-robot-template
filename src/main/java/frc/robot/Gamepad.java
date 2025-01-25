@@ -64,7 +64,7 @@ public class Gamepad {
 	public Gamepad(int port) {
 		controller = new Joystick(port);
 		System.out.println(port);
-		AxisMap = AxisMapLinux;
+		AxisMap = AxisMapWindows;
 	}
 
 	public Gamepad(int port, boolean windows) {
